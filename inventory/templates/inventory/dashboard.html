@@ -1,0 +1,104 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="mb-4">Erlienita’s Food Products - Supply Chain Dashboard</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3 h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Products</h5>
+                <h2 class="display-4">{{ total_products }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3 h-100">
+            <div class="card-body">
+                <h5 class="card-title">Low Stock Items</h5>
+                <h2 class="display-4">{{ low_stock_count }}</h2>
+                <small>Items below 10 units</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-danger mb-3 h-100">
+            <div class="card-body">
+                <h5 class="card-title">Near Expiry (7 days)</h5>
+                <h2 class="display-4">{{ near_expiry_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3 h-100">
+            <div class="card-body">
+                <h5 class="card-title">Total Movements</h5>
+                <h2 class="display-4">{{ recent_movements|length }}</h2>
+                <small>Recent Activity</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock Alert -->
+{% if low_stock %}
+<div class="alert alert-warning mt-4">
+    <h5><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h5>
+    <ul>
+        {% for item in low_stock %}
+        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — Only <strong>{{ item.quantity }}</strong> left</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Near Expiry Alert -->
+{% if near_expiry %}
+<div class="alert alert-danger mt-3">
+    <h5><i class="fas fa-clock"></i> Near Expiry Warning</h5>
+    <ul>
+        {% for item in near_expiry %}
+        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"-" }}) — Expires on <strong>{{ item.expiration_date }}</strong></li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<h4 class="mt-5 mb-3">Recent Stock Movements</h4>
+<table class="table table-hover table-bordered">
+    <thead class="table-success">
+        <tr>
+            <th>Date</th>
+            <th>Product</th>
+            <th>Type</th>
+            <th>Qty</th>
+            <th>Branch</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in recent_movements %}
+        <tr>
+            <td>{{ m.created_at|date:"M d, Y H:i" }}</td>
+            <td>{{ m.product }}</td>
+            <td><span class="badge bg-info">{{ m.get_movement_type_display }}</span></td>
+            <td>{{ m.quantity }}</td>
+            <td>{{ m.destination_branch|default:"Warehouse" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center py-4">No movements recorded yet. Start adding some!</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="mt-4 text-center">
+    <a href="{% url 'product_list' %}" class="btn btn-outline-primary mx-2">Manage Products</a>
+    <a href="{% url 'movement_list' %}" class="btn btn-outline-success mx-2">Record Movement</a>
+    <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-warning mx-2">Reconciliation</a>
+</div>
+{% endblock %}

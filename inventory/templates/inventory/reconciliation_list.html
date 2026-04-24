@@ -1,0 +1,80 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Stock Reconciliation{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Stock Reconciliation (SM & Savemore)</h2>
+    <a href="{% url 'reconciliation_add' %}" class="btn btn-success">
+        <i class="fas fa-plus"></i> Add Retailer Sales Data
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5>Total Records</h5>
+                <h3>{{ reconciliations.count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5>Total Discrepancy</h5>
+                <h3>{{ total_discrepancy }}</h3>
+                <small>units</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5>Reconciled Items</h5>
+                <h3>{{ reconciled_count }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="table table-hover table-bordered">
+    <thead class="table-success">
+        <tr>
+            <th>Date</th>
+            <th>Branch</th>
+            <th>Product</th>
+            <th>Sold Qty (Retailer)</th>
+            <th>Internal Delivery</th>
+            <th>Discrepancy</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in reconciliations %}
+        <tr>
+            <td>{{ r.sales_date|date:"M d, Y" }}</td>
+            <td>{{ r.branch }}</td>
+            <td><strong>{{ r.product }}</strong></td>
+            <td class="text-end">{{ r.sold_quantity }}</td>
+            <td class="text-end">{{ r.internal_delivery_qty|default:"-" }}</td>
+            <td class="text-end fw-bold">
+                <span class="badge bg-{% if r.discrepancy and r.discrepancy < 0 %}danger{% elif r.discrepancy > 0 %}warning{% else %}success{% endif %}">
+                    {{ r.discrepancy|default:0 }}
+                </span>
+            </td>
+            <td>
+                {% if r.reconciled %}
+                    <span class="badge bg-success">✅ Reconciled</span>
+                {% else %}
+                    <span class="badge bg-warning">⚠️ Pending</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-5">No reconciliation data yet. Add some sales reports from SM/Savemore.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
