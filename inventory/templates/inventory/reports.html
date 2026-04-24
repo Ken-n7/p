@@ -1,0 +1,132 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="fas fa-chart-bar"></i> Reports & Analysis</h4>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body">
+                <p class="mb-1 small">Total Stock Lost</p>
+                <h2 class="fw-bold mb-0">{{ total_loss_qty }}</h2>
+                <small class="opacity-75">units across all products</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <p class="mb-1 small">Reconciled Records</p>
+                <h2 class="fw-bold mb-0">{{ reconciled }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-4">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+                <p class="mb-1 small">Pending Reconciliation</p>
+                <h2 class="fw-bold mb-0">{{ unreconciled }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Loss Analysis -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="fas fa-exclamation-circle text-danger"></i> Loss Analysis by Product</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th class="text-end">Total Lost (units)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in product_losses %}
+                        <tr>
+                            <td>{{ row.product__name }}</td>
+                            <td><code>{{ row.product__sku }}</code></td>
+                            <td class="text-end fw-bold text-danger">{{ row.total_lost }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">No losses recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deliveries by Branch -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="fas fa-truck text-primary"></i> Deliveries by Branch</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Branch</th>
+                            <th class="text-end">Deliveries</th>
+                            <th class="text-end">Total Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in deliveries_by_branch %}
+                        <tr>
+                            <td>{{ row.destination_branch|default:"(unspecified)" }}</td>
+                            <td class="text-end">{{ row.total_movements }}</td>
+                            <td class="text-end fw-bold">{{ row.total_qty }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center py-3 text-muted">No deliveries recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Orders -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-clock text-warning"></i> Back Orders</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Branch</th>
+                            <th>Reference</th>
+                            <th>Note</th>
+                            <th>Recorded By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in back_orders %}
+                        <tr>
+                            <td class="small text-nowrap">{{ m.created_at|date:"M d, Y H:i" }}</td>
+                            <td>{{ m.product.name }}</td>
+                            <td>{{ m.quantity }}</td>
+                            <td>{{ m.destination_branch|default:"—" }}</td>
+                            <td>{{ m.reference_no|default:"—" }}</td>
+                            <td class="small text-muted">{{ m.note|default:"—" }}</td>
+                            <td class="small text-muted">{{ m.created_by.username|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center py-3 text-muted">No back orders recorded.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

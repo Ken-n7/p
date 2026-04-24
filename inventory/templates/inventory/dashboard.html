@@ -3,102 +3,139 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        <h2 class="mb-4">Erlienita’s Food Products - Supply Chain Dashboard</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-tachometer-alt"></i> Erlienita's Food Products — Dashboard</h4>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-white bg-primary h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="card-text small mb-1">Total Products</p>
+                        <h2 class="fw-bold mb-0">{{ total_products }}</h2>
+                    </div>
+                    <i class="fas fa-box fa-2x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'product_list' %}" class="text-white small">View all &rarr;</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-white bg-warning h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="card-text small mb-1">Low Stock Items</p>
+                        <h2 class="fw-bold mb-0">{{ low_stock_count }}</h2>
+                        <small class="opacity-75">Below 10 units</small>
+                    </div>
+                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-white bg-danger h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="card-text small mb-1">Near Expiry</p>
+                        <h2 class="fw-bold mb-0">{{ near_expiry_count }}</h2>
+                        <small class="opacity-75">Within 7 days</small>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card text-white bg-success h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="card-text small mb-1">Total Movements</p>
+                        <h2 class="fw-bold mb-0">{{ total_movements }}</h2>
+                    </div>
+                    <i class="fas fa-exchange-alt fa-2x opacity-50"></i>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{% url 'movement_list' %}" class="text-white small">View all &rarr;</a>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3 h-100">
-            <div class="card-body">
-                <h5 class="card-title">Total Products</h5>
-                <h2 class="display-4">{{ total_products }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3 h-100">
-            <div class="card-body">
-                <h5 class="card-title">Low Stock Items</h5>
-                <h2 class="display-4">{{ low_stock_count }}</h2>
-                <small>Items below 10 units</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-danger mb-3 h-100">
-            <div class="card-body">
-                <h5 class="card-title">Near Expiry (7 days)</h5>
-                <h2 class="display-4">{{ near_expiry_count }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-success mb-3 h-100">
-            <div class="card-body">
-                <h5 class="card-title">Total Movements</h5>
-                <h2 class="display-4">{{ recent_movements|length }}</h2>
-                <small>Recent Activity</small>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Low Stock Alert -->
+<!-- Alerts -->
 {% if low_stock %}
-<div class="alert alert-warning mt-4">
-    <h5><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h5>
-    <ul>
+<div class="alert alert-warning">
+    <h6 class="mb-2"><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h6>
+    <ul class="mb-0 ps-3">
         {% for item in low_stock %}
-        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — Only <strong>{{ item.quantity }}</strong> left</li>
+        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — <strong>{{ item.quantity }}</strong> units left</li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
-<!-- Near Expiry Alert -->
 {% if near_expiry %}
-<div class="alert alert-danger mt-3">
-    <h5><i class="fas fa-clock"></i> Near Expiry Warning</h5>
-    <ul>
+<div class="alert alert-danger">
+    <h6 class="mb-2"><i class="fas fa-clock"></i> Near Expiry Warning</h6>
+    <ul class="mb-0 ps-3">
         {% for item in near_expiry %}
-        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"-" }}) — Expires on <strong>{{ item.expiration_date }}</strong></li>
+        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires <strong>{{ item.expiration_date }}</strong></li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
-<h4 class="mt-5 mb-3">Recent Stock Movements</h4>
-<table class="table table-hover table-bordered">
-    <thead class="table-success">
-        <tr>
-            <th>Date</th>
-            <th>Product</th>
-            <th>Type</th>
-            <th>Qty</th>
-            <th>Branch</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for m in recent_movements %}
-        <tr>
-            <td>{{ m.created_at|date:"M d, Y H:i" }}</td>
-            <td>{{ m.product }}</td>
-            <td><span class="badge bg-info">{{ m.get_movement_type_display }}</span></td>
-            <td>{{ m.quantity }}</td>
-            <td>{{ m.destination_branch|default:"Warehouse" }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="text-center py-4">No movements recorded yet. Start adding some!</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<div class="mt-4 text-center">
-    <a href="{% url 'product_list' %}" class="btn btn-outline-primary mx-2">Manage Products</a>
-    <a href="{% url 'movement_list' %}" class="btn btn-outline-success mx-2">Record Movement</a>
-    <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-warning mx-2">Reconciliation</a>
+<!-- Recent Movements -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-history"></i> Recent Stock Movements</span>
+        <a href="{% url 'movement_create' %}" class="btn btn-sm btn-success">
+            <i class="fas fa-plus"></i> Record Movement
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Qty</th>
+                    <th>Branch / Ref</th>
+                    <th>By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in recent_movements %}
+                <tr>
+                    <td class="text-nowrap small">{{ m.created_at|date:"M d, Y H:i" }}</td>
+                    <td>{{ m.product.name }}</td>
+                    <td>
+                        {% if m.movement_type == 'production_in' %}<span class="badge bg-success">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'delivery_out' %}<span class="badge bg-primary">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'return_in' %}<span class="badge bg-info">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'loss' %}<span class="badge bg-danger">{{ m.get_movement_type_display }}</span>
+                        {% else %}<span class="badge bg-warning text-dark">{{ m.get_movement_type_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ m.quantity }}</td>
+                    <td>{{ m.destination_branch|default:"—" }}{% if m.reference_no %} <span class="text-muted small">({{ m.reference_no }})</span>{% endif %}</td>
+                    <td class="small text-muted">{{ m.created_by.username|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center py-4 text-muted">No movements recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

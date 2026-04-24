@@ -30,6 +30,11 @@ class InventoryMovement(models.Model):
         ('back_order', 'Back Order'),
     ]
 
+    # Types that increase stock vs decrease stock
+    INBOUND_TYPES = {'production_in', 'return_in'}
+    OUTBOUND_TYPES = {'delivery_out', 'loss'}
+    # back_order is recorded but does not affect current stock level
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
     quantity = models.PositiveIntegerField()
@@ -38,6 +43,17 @@ class InventoryMovement(models.Model):
     note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new:
+            product = self.product
+            if self.movement_type in self.INBOUND_TYPES:
+                product.quantity += self.quantity
+            elif self.movement_type in self.OUTBOUND_TYPES:
+                product.quantity = max(0, product.quantity - self.quantity)
+            product.save(update_fields=['quantity'])
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_movement_type_display()} - {self.product.name} ({self.quantity})"
@@ -63,6 +79,29 @@ class RetailerSales(models.Model):
 
     def __str__(self):
         return f"{self.branch} - {self.product.name} ({self.sales_date})"
+
+
+# ================== AUDIT LOG ==================
+class AuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('create', 'Created'),
+        ('update', 'Updated'),
+        ('delete', 'Deleted'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES)
+    model_name = models.CharField(max_length=50)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    object_repr = models.CharField(max_length=255)
+    changes = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"[{self.timestamp:%Y-%m-%d %H:%M}] {self.user} {self.action} {self.model_name}: {self.object_repr}"
 
 
 # ================== USER ROLES ==================

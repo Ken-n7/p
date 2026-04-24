@@ -1,0 +1,26 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Delete Product{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-trash"></i> Delete Product</h5>
+            </div>
+            <div class="card-body">
+                <p>Are you sure you want to delete <strong>{{ object.name }}</strong> ({{ object.sku }})?</p>
+                <p class="text-muted small">This will also delete all movement records associated with this product. This action cannot be undone.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <a href="{% url 'product_list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-danger ms-2">
+                        <i class="fas fa-trash"></i> Yes, Delete
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

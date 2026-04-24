@@ -1,0 +1,73 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Audit Log{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-history"></i> Audit Log</h4>
+    <span class="text-muted small">Showing last {{ logs|length }} entries</span>
+</div>
+
+<form method="get" class="mb-3 d-flex gap-2 flex-wrap align-items-center">
+    <select name="action" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+        <option value="">All Actions</option>
+        {% for value, label in action_choices %}
+        <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+    <select name="model" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+        <option value="">All Models</option>
+        {% for name in model_names %}
+        <option value="{{ name }}" {% if model_filter == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+    </select>
+    {% if action_filter or model_filter %}
+    <a href="{% url 'audit_log' %}" class="btn btn-outline-danger btn-sm">Clear</a>
+    {% endif %}
+</form>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Record</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in logs %}
+                <tr>
+                    <td class="text-nowrap small text-muted">{{ entry.timestamp|date:"M d, Y H:i:s" }}</td>
+                    <td class="small">
+                        <i class="fas fa-user-circle text-secondary"></i>
+                        {{ entry.user.username|default:"system" }}
+                    </td>
+                    <td>
+                        {% if entry.action == 'create' %}
+                            <span class="badge bg-success">Created</span>
+                        {% elif entry.action == 'update' %}
+                            <span class="badge bg-primary">Updated</span>
+                        {% elif entry.action == 'delete' %}
+                            <span class="badge bg-danger">Deleted</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        <span class="text-muted">{{ entry.model_name }}</span>
+                        &mdash; {{ entry.object_repr|truncatechars:50 }}
+                    </td>
+                    <td class="small text-muted">{{ entry.changes|default:"—"|truncatechars:80 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-muted">No audit entries yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
