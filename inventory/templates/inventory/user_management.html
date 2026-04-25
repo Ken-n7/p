@@ -44,10 +44,19 @@
                         {% if u.is_active %}<span class="badge bg-success">Active</span>
                         {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
                     </td>
-                    <td>
+                    <td class="d-flex gap-1 flex-wrap">
                         <a href="{% url 'user_edit' u.pk %}" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-edit"></i> Edit
                         </a>
+                        {% if not u.is_superuser and u != request.user %}
+                        <a href="{% url 'user_deactivate' u.pk %}" class="btn btn-outline-warning btn-sm">
+                            {% if u.is_active %}<i class="fas fa-ban"></i> Deactivate
+                            {% else %}<i class="fas fa-check-circle"></i> Activate{% endif %}
+                        </a>
+                        <a href="{% url 'user_delete' u.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

@@ -3,7 +3,20 @@
 {% block title %}Reports{% endblock %}
 
 {% block content %}
-<h4 class="mb-4"><i class="fas fa-chart-bar"></i> Reports & Analysis</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-chart-bar"></i> Reports & Analysis</h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'export_losses_csv' %}" class="btn btn-outline-danger btn-sm">
+            <i class="fas fa-download"></i> Export Losses
+        </a>
+        <a href="{% url 'export_deliveries_csv' %}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-download"></i> Export Deliveries
+        </a>
+        <a href="{% url 'export_back_orders_csv' %}" class="btn btn-outline-warning btn-sm">
+            <i class="fas fa-download"></i> Export Back Orders
+        </a>
+    </div>
+</div>
 
 <div class="row g-3 mb-4">
     <div class="col-sm-4">

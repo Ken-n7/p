@@ -20,6 +20,9 @@ urlpatterns = [
 
     # Reports
     path('reports/', views.reports, name='reports'),
+    path('reports/export/losses/', views.export_losses_csv, name='export_losses_csv'),
+    path('reports/export/deliveries/', views.export_deliveries_csv, name='export_deliveries_csv'),
+    path('reports/export/back-orders/', views.export_back_orders_csv, name='export_back_orders_csv'),
 
     # Audit log (admin only)
     path('audit/', views.audit_log, name='audit_log'),
@@ -28,6 +31,8 @@ urlpatterns = [
     path('users/', views.user_management, name='user_management'),
     path('users/add/', views.user_create, name='user_create'),
     path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
+    path('users/<int:pk>/deactivate/', views.user_deactivate, name='user_deactivate'),
+    path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
 
     # Auth
     path('login/', views.user_login, name='user_login'),

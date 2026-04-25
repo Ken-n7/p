@@ -1,4 +1,6 @@
+import csv
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -19,6 +21,14 @@ def _is_admin(user):
     return profile and profile.role == 'admin'
 
 
+def _has_role(user, *roles):
+    """Return True if user is superuser or has one of the given roles."""
+    if user.is_superuser:
+        return True
+    profile = getattr(user, 'profile', None)
+    return profile and profile.role in roles
+
+
 def _log(user, action, obj, changes=''):
     AuditLog.objects.create(
         user=user if user.is_authenticated else None,
@@ -34,10 +44,17 @@ def _diff(form):
     """Return a readable string of changed fields for an edit form."""
     if not form.changed_data:
         return ''
+    from django.forms import ModelChoiceField
     parts = []
     for field in form.changed_data:
         old = form.initial.get(field, '—')
         new = form.cleaned_data.get(field, '—')
+        field_obj = form.fields.get(field)
+        if isinstance(field_obj, ModelChoiceField) and old not in ('—', None, ''):
+            try:
+                old = field_obj.queryset.get(pk=old)
+            except Exception:
+                pass
         parts.append(f"{field}: '{old}' → '{new}'")
     return ' | '.join(parts)
 
@@ -150,6 +167,9 @@ def movement_list(request):
 
 @login_required
 def movement_create(request):
+    if not _has_role(request.user, 'admin', 'warehouse', 'sales'):
+        messages.error(request, 'Access denied. Recording movements is for admin, warehouse, and sales roles only.')
+        return redirect('movement_list')
     if request.method == 'POST':
         form = InventoryMovementForm(request.POST)
         if form.is_valid():
@@ -169,6 +189,9 @@ def movement_create(request):
 
 @login_required
 def reconciliation_list(request):
+    if not _has_role(request.user, 'admin', 'accountant'):
+        messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
+        return redirect('dashboard')
     reconciliations = RetailerSales.objects.select_related('product').order_by('-sales_date')
     total_discrepancy = sum(r.discrepancy or 0 for r in reconciliations)
     reconciled_count = reconciliations.filter(reconciled=True).count()
@@ -182,6 +205,9 @@ def reconciliation_list(request):
 
 @login_required
 def reconciliation_add(request):
+    if not _has_role(request.user, 'admin', 'accountant'):
+        messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
+        return redirect('dashboard')
     if request.method == 'POST':
         form = RetailerSalesForm(request.POST)
         if form.is_valid():
@@ -231,6 +257,64 @@ def reports(request):
         'unreconciled': unreconciled,
         'reconciled': reconciled,
     })
+
+
+# ── CSV Exports ───────────────────────────────────────────────────────────────
+
+@login_required
+def export_losses_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="loss_analysis.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Product', 'SKU', 'Total Lost (units)'])
+    rows = (
+        InventoryMovement.objects
+        .filter(movement_type='loss')
+        .values('product__name', 'product__sku')
+        .annotate(total_lost=Sum('quantity'))
+        .order_by('-total_lost')
+    )
+    for row in rows:
+        writer.writerow([row['product__name'], row['product__sku'], row['total_lost']])
+    return response
+
+
+@login_required
+def export_deliveries_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="deliveries_by_branch.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Branch', 'Number of Deliveries', 'Total Quantity'])
+    rows = (
+        InventoryMovement.objects
+        .filter(movement_type='delivery_out')
+        .values('destination_branch')
+        .annotate(total_qty=Sum('quantity'), total_movements=Count('id'))
+        .order_by('-total_qty')
+    )
+    for row in rows:
+        writer.writerow([row['destination_branch'] or '(unspecified)', row['total_movements'], row['total_qty']])
+    return response
+
+
+@login_required
+def export_back_orders_csv(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="back_orders.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Product', 'Quantity', 'Branch', 'Reference', 'Note', 'Recorded By'])
+    back_orders = InventoryMovement.objects.filter(movement_type='back_order').select_related('product', 'created_by').order_by('-created_at')
+    for m in back_orders:
+        writer.writerow([
+            m.created_at.strftime('%Y-%m-%d %H:%M'),
+            m.product.name,
+            m.quantity,
+            m.destination_branch or '',
+            m.reference_no or '',
+            m.note or '',
+            m.created_by.username if m.created_by else '',
+        ])
+    return response
 
 
 # ── Audit Log ─────────────────────────────────────────────────────────────────
@@ -317,6 +401,65 @@ def user_edit(request, pk):
         form = UserEditForm(instance=target_user)
     return render(request, 'inventory/user_form.html', {
         'form': form, 'title': 'Edit User', 'edit_user': target_user,
+    })
+
+
+@login_required
+def user_deactivate(request, pk):
+    from django.contrib.auth.models import User
+    if not _is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    target_user = get_object_or_404(User, pk=pk)
+
+    if target_user == request.user:
+        messages.error(request, 'You cannot deactivate your own account.')
+        return redirect('user_management')
+    if target_user.is_superuser:
+        messages.error(request, 'Superuser accounts cannot be deactivated.')
+        return redirect('user_management')
+
+    if request.method == 'POST':
+        target_user.is_active = not target_user.is_active
+        target_user.save()
+        action_label = 'activated' if target_user.is_active else 'deactivated'
+        _log(request.user, 'update', target_user, f"is_active set to {target_user.is_active}")
+        messages.success(request, f'User "{target_user.username}" {action_label}.')
+        return redirect('user_management')
+
+    return render(request, 'inventory/user_confirm_deactivate.html', {
+        'target_user': target_user,
+        'title': 'Deactivate User' if target_user.is_active else 'Activate User',
+    })
+
+
+@login_required
+def user_delete(request, pk):
+    from django.contrib.auth.models import User
+    if not _is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    target_user = get_object_or_404(User, pk=pk)
+
+    if target_user == request.user:
+        messages.error(request, 'You cannot delete your own account.')
+        return redirect('user_management')
+    if target_user.is_superuser:
+        messages.error(request, 'Superuser accounts cannot be deleted here.')
+        return redirect('user_management')
+
+    if request.method == 'POST':
+        username = target_user.username
+        _log(request.user, 'delete', target_user, f"username={username}")
+        target_user.delete()
+        messages.success(request, f'User "{username}" deleted.')
+        return redirect('user_management')
+
+    return render(request, 'inventory/user_confirm_delete.html', {
+        'target_user': target_user,
+        'title': 'Delete User',
     })
 
 
