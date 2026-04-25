@@ -8,8 +8,8 @@ from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.db.models import Sum, Count
 
-from .models import Product, InventoryMovement, RetailerSales, AuditLog
-from .forms import ProductForm, InventoryMovementForm, RetailerSalesForm
+from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
+from .forms import ProductForm, InventoryMovementForm, RetailerSalesForm, BranchForm
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -73,11 +73,11 @@ def dashboard(request):
         expiration_date__isnull=False,
         expiration_date__lte=timezone.now().date() + timezone.timedelta(days=7)
     )
-    recent_movements = InventoryMovement.objects.select_related('product', 'created_by').order_by('-created_at')[:10]
+    recent_movements = InventoryMovement.objects.select_related('product', 'created_by', 'destination_branch').order_by('-created_at')[:10]
     deliveries_by_branch = (
         InventoryMovement.objects
         .filter(movement_type='delivery_out')
-        .values('destination_branch')
+        .values('destination_branch__name')
         .annotate(total_qty=Sum('quantity'))
         .order_by('-total_qty')
     )
@@ -161,7 +161,7 @@ def product_delete(request, pk):
 
 @login_required
 def movement_list(request):
-    movements = InventoryMovement.objects.select_related('product', 'created_by').order_by('-created_at')
+    movements = InventoryMovement.objects.select_related('product', 'created_by', 'destination_branch').order_by('-created_at')
     movement_type = request.GET.get('type', '')
     if movement_type:
         movements = movements.filter(movement_type=movement_type)
@@ -200,7 +200,7 @@ def reconciliation_list(request):
     if not _has_role(request.user, 'admin', 'accountant'):
         messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
         return redirect('dashboard')
-    reconciliations = RetailerSales.objects.select_related('product').order_by('-sales_date')
+    reconciliations = RetailerSales.objects.select_related('product', 'branch').order_by('-sales_date')
     total_discrepancy = sum(r.discrepancy or 0 for r in reconciliations)
     reconciled_count = reconciliations.filter(reconciled=True).count()
     return render(request, 'inventory/reconciliation_list.html', {
@@ -248,11 +248,11 @@ def reports(request):
     deliveries_by_branch = (
         InventoryMovement.objects
         .filter(movement_type='delivery_out')
-        .values('destination_branch')
+        .values('destination_branch__name')
         .annotate(total_qty=Sum('quantity'), total_movements=Count('id'))
         .order_by('-total_qty')
     )
-    back_orders = InventoryMovement.objects.filter(movement_type='back_order').order_by('-created_at')
+    back_orders = InventoryMovement.objects.filter(movement_type='back_order').select_related('product', 'created_by', 'destination_branch').order_by('-created_at')
     unreconciled = RetailerSales.objects.filter(reconciled=False).count()
     reconciled = RetailerSales.objects.filter(reconciled=True).count()
 
@@ -296,12 +296,12 @@ def export_deliveries_csv(request):
     rows = (
         InventoryMovement.objects
         .filter(movement_type='delivery_out')
-        .values('destination_branch')
+        .values('destination_branch__name')
         .annotate(total_qty=Sum('quantity'), total_movements=Count('id'))
         .order_by('-total_qty')
     )
     for row in rows:
-        writer.writerow([row['destination_branch'] or '(unspecified)', row['total_movements'], row['total_qty']])
+        writer.writerow([row['destination_branch__name'] or '(unspecified)', row['total_movements'], row['total_qty']])
     return response
 
 
@@ -468,6 +468,107 @@ def user_delete(request, pk):
     return render(request, 'inventory/user_confirm_delete.html', {
         'target_user': target_user,
         'title': 'Delete User',
+    })
+
+
+# ── Branches ──────────────────────────────────────────────────────────────────
+
+@login_required
+def branch_list(request):
+    branches = Branch.objects.all()
+    return render(request, 'inventory/branch_list.html', {
+        'branches': branches,
+        'title': 'Branches',
+        'is_admin': _is_admin(request.user),
+    })
+
+
+@login_required
+def branch_create(request):
+    if not _is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('branch_list')
+    if request.method == 'POST':
+        form = BranchForm(request.POST)
+        if form.is_valid():
+            branch = form.save()
+            _log(request.user, 'create', branch, f"name={branch.name}")
+            messages.success(request, f'Branch "{branch.name}" added.')
+            return redirect('branch_list')
+    else:
+        form = BranchForm()
+    return render(request, 'inventory/branch_form.html', {'form': form, 'title': 'Add Branch'})
+
+
+@login_required
+def branch_edit(request, pk):
+    if not _is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('branch_list')
+    branch = get_object_or_404(Branch, pk=pk)
+    if request.method == 'POST':
+        form = BranchForm(request.POST, instance=branch)
+        if form.is_valid():
+            changes = _diff(form)
+            form.save()
+            _log(request.user, 'update', branch, changes or 'No changes')
+            messages.success(request, f'Branch "{branch.name}" updated.')
+            return redirect('branch_list')
+    else:
+        form = BranchForm(instance=branch)
+    return render(request, 'inventory/branch_form.html', {
+        'form': form, 'title': 'Edit Branch', 'branch': branch,
+    })
+
+
+@login_required
+def branch_delete(request, pk):
+    if not _is_admin(request.user):
+        messages.error(request, 'Access denied.')
+        return redirect('branch_list')
+    branch = get_object_or_404(Branch, pk=pk)
+    if request.method == 'POST':
+        _log(request.user, 'delete', branch, f"name={branch.name}")
+        branch.delete()
+        messages.success(request, f'Branch "{branch.name}" deleted.')
+        return redirect('branch_list')
+    return render(request, 'inventory/branch_confirm_delete.html', {
+        'branch': branch, 'title': 'Delete Branch',
+    })
+
+
+@login_required
+def branch_detail(request, pk):
+    branch = get_object_or_404(Branch, pk=pk)
+    movements = (
+        InventoryMovement.objects
+        .filter(destination_branch=branch)
+        .select_related('product', 'created_by')
+        .order_by('-created_at')
+    )
+    total_delivered = movements.filter(movement_type='delivery_out').aggregate(total=Sum('quantity'))['total'] or 0
+    total_back_orders = movements.filter(movement_type='back_order').aggregate(total=Sum('quantity'))['total'] or 0
+
+    can_see_reconciliation = _has_role(request.user, 'admin', 'accountant')
+    sales = None
+    total_sold = 0
+    total_discrepancy = 0
+    if can_see_reconciliation:
+        sales = RetailerSales.objects.filter(branch=branch).select_related('product').order_by('-sales_date')
+        total_sold = sales.aggregate(total=Sum('sold_quantity'))['total'] or 0
+        total_discrepancy = sales.aggregate(total=Sum('discrepancy'))['total'] or 0
+
+    return render(request, 'inventory/branch_detail.html', {
+        'branch': branch,
+        'movements': movements,
+        'total_delivered': total_delivered,
+        'total_back_orders': total_back_orders,
+        'can_see_reconciliation': can_see_reconciliation,
+        'sales': sales,
+        'total_sold': total_sold,
+        'total_discrepancy': total_discrepancy,
+        'is_admin': _is_admin(request.user),
+        'title': branch.name,
     })
 
 

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Product, InventoryMovement, RetailerSales, UserProfile
+from .models import Product, InventoryMovement, RetailerSales, UserProfile, Branch
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -25,6 +25,11 @@ class InventoryMovementForm(forms.ModelForm):
 
 
 class RetailerSalesForm(forms.ModelForm):
+    branch = forms.ModelChoiceField(
+        queryset=Branch.objects.all(),
+        empty_label="Select a branch",
+    )
+
     class Meta:
         model = RetailerSales
         fields = ['product', 'branch', 'sold_quantity', 'sales_date',
@@ -32,6 +37,12 @@ class RetailerSalesForm(forms.ModelForm):
         widgets = {
             'sales_date': forms.DateInput(attrs={'type': 'date'}),
         }
+
+
+class BranchForm(forms.ModelForm):
+    class Meta:
+        model = Branch
+        fields = ['name', 'address']
 
 
 class UserCreateForm(UserCreationForm):

@@ -18,6 +18,13 @@ urlpatterns = [
     path('reconciliation/', views.reconciliation_list, name='reconciliation_list'),
     path('reconciliation/add/', views.reconciliation_add, name='reconciliation_add'),
 
+    # Branches
+    path('branches/', views.branch_list, name='branch_list'),
+    path('branches/add/', views.branch_create, name='branch_create'),
+    path('branches/<int:pk>/', views.branch_detail, name='branch_detail'),
+    path('branches/<int:pk>/edit/', views.branch_edit, name='branch_edit'),
+    path('branches/<int:pk>/delete/', views.branch_delete, name='branch_delete'),
+
     # Reports
     path('reports/', views.reports, name='reports'),
     path('reports/export/losses/', views.export_losses_csv, name='export_losses_csv'),
