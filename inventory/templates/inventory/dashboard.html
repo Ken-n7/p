@@ -1,110 +1,145 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}Dashboard{% endblock %}
-
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="mb-0"><i class="fas fa-tachometer-alt"></i> Erlienita's Food Products — Dashboard</h4>
+<div class="mb-4">
+    <h5 class="mb-0">Good to see you, {{ request.user.get_full_name|default:request.user.username }}.</h5>
+    <p class="text-muted small mb-0">Here's what's happening with your inventory today.</p>
 </div>
 
 <!-- KPI Cards -->
 <div class="row g-3 mb-4">
-    <div class="col-sm-6 col-lg-3">
-        <div class="card text-white bg-primary h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="card-text small mb-1">Total Products</p>
-                        <h2 class="fw-bold mb-0">{{ total_products }}</h2>
-                    </div>
-                    <i class="fas fa-box fa-2x opacity-50"></i>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-box" style="color:#4f46e5;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Total Products</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:#0f172a;">{{ total_products }}</div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="{% url 'product_list' %}" class="text-white small">View all &rarr;</a>
+            <div style="padding:0 16px 12px;">
+                <a href="{% url 'product_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
+                    View all products <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
+                </a>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card text-white bg-warning h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="card-text small mb-1">Low Stock Items</p>
-                        <h2 class="fw-bold mb-0">{{ low_stock_count }}</h2>
-                        <small class="opacity-75">Below 10 units</small>
-                    </div>
-                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:1rem;"></i>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card text-white bg-danger h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="card-text small mb-1">Near Expiry</p>
-                        <h2 class="fw-bold mb-0">{{ near_expiry_count }}</h2>
-                        <small class="opacity-75">Within 7 days</small>
-                    </div>
-                    <i class="fas fa-clock fa-2x opacity-50"></i>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Low Stock</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if low_stock_count > 0 %}#d97706{% else %}#0f172a{% endif %};">{{ low_stock_count }}</div>
+                    <div style="font-size:0.7rem;color:#94a3b8;">Below 10 units</div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card text-white bg-success h-100">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="card-text small mb-1">Total Movements</p>
-                        <h2 class="fw-bold mb-0">{{ total_movements }}</h2>
-                    </div>
-                    <i class="fas fa-exchange-alt fa-2x opacity-50"></i>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-clock" style="color:#dc2626;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Near Expiry</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if near_expiry_count > 0 %}#dc2626{% else %}#0f172a{% endif %};">{{ near_expiry_count }}</div>
+                    <div style="font-size:0.7rem;color:#94a3b8;">Within 7 days</div>
                 </div>
             </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="{% url 'movement_list' %}" class="text-white small">View all &rarr;</a>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-exchange-alt" style="color:#16a34a;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Total Movements</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:#0f172a;">{{ total_movements }}</div>
+                </div>
+            </div>
+            <div style="padding:0 16px 12px;">
+                <a href="{% url 'movement_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
+                    View all movements <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Alerts -->
+<!-- Alert Banners -->
 {% if low_stock %}
-<div class="alert alert-warning">
-    <h6 class="mb-2"><i class="fas fa-exclamation-triangle"></i> Low Stock Alert</h6>
-    <ul class="mb-0 ps-3">
+<div class="alert mb-3" style="background:#fffbeb;border-left:3px solid #d97706;border-radius:10px;padding:12px 16px;">
+    <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:0.8rem;"></i>
+        <strong style="font-size:0.82rem;color:#92400e;">Low Stock Alert</strong>
+    </div>
+    <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#78350f;">
         {% for item in low_stock %}
-        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — <strong>{{ item.quantity }}</strong> units left</li>
+        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — {{ item.quantity }} units remaining</li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
 {% if near_expiry %}
-<div class="alert alert-danger">
-    <h6 class="mb-2"><i class="fas fa-clock"></i> Near Expiry Warning</h6>
-    <ul class="mb-0 ps-3">
+<div class="alert mb-4" style="background:#fff1f2;border-left:3px solid #dc2626;border-radius:10px;padding:12px 16px;">
+    <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="fas fa-clock" style="color:#dc2626;font-size:0.8rem;"></i>
+        <strong style="font-size:0.82rem;color:#991b1b;">Near Expiry Warning</strong>
+    </div>
+    <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#7f1d1d;">
         {% for item in near_expiry %}
-        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires <strong>{{ item.expiration_date }}</strong></li>
+        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires {{ item.expiration_date }}</li>
         {% endfor %}
     </ul>
 </div>
 {% endif %}
 
-<!-- Recent Movements -->
+<!-- Deliveries Chart + Recent Movements -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-truck" style="color:#1d4ed8;margin-right:6px;"></i> Deliveries by Branch
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height:220px;">
+                {% if deliveries_by_branch %}
+                <canvas id="branchChart"></canvas>
+                {% else %}
+                <div class="text-center" style="color:#94a3b8;">
+                    <i class="fas fa-chart-bar" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                    No delivery data yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+<!-- Recent Movements card starts here -->
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-history"></i> Recent Stock Movements</span>
+        <span><i class="fas fa-history" style="color:#64748b;margin-right:6px;"></i>Recent Stock Movements</span>
+        {% if request.user.is_superuser or request.user.profile.role != 'accountant' %}
         <a href="{% url 'movement_create' %}" class="btn btn-sm btn-success">
             <i class="fas fa-plus"></i> Record Movement
         </a>
+        {% endif %}
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th>Date</th>
                     <th>Product</th>
@@ -117,25 +152,86 @@
             <tbody>
                 {% for m in recent_movements %}
                 <tr>
-                    <td class="text-nowrap small">{{ m.created_at|date:"M d, Y H:i" }}</td>
-                    <td>{{ m.product.name }}</td>
+                    <td class="text-nowrap" style="color:#64748b;">{{ m.created_at|date:"M d, Y H:i" }}</td>
+                    <td><span style="font-weight:500;">{{ m.product.name }}</span></td>
                     <td>
-                        {% if m.movement_type == 'production_in' %}<span class="badge bg-success">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'delivery_out' %}<span class="badge bg-primary">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'return_in' %}<span class="badge bg-info">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'loss' %}<span class="badge bg-danger">{{ m.get_movement_type_display }}</span>
-                        {% else %}<span class="badge bg-warning text-dark">{{ m.get_movement_type_display }}</span>
+                        {% if m.movement_type == 'production_in' %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'delivery_out' %}
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'return_in' %}
+                            <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'loss' %}
+                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ m.get_movement_type_display }}</span>
+                        {% else %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
                         {% endif %}
                     </td>
-                    <td>{{ m.quantity }}</td>
-                    <td>{{ m.destination_branch|default:"—" }}{% if m.reference_no %} <span class="text-muted small">({{ m.reference_no }})</span>{% endif %}</td>
-                    <td class="small text-muted">{{ m.created_by.username|default:"—" }}</td>
+                    <td style="font-weight:600;">{{ m.quantity }}</td>
+                    <td>
+                        {{ m.destination_branch|default:"—" }}
+                        {% if m.reference_no %}<span style="color:#94a3b8;font-size:0.78rem;">({{ m.reference_no }})</span>{% endif %}
+                    </td>
+                    <td style="color:#94a3b8;">{{ m.created_by.username|default:"—" }}</td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="text-center py-4 text-muted">No movements recorded yet.</td></tr>
+                <tr>
+                    <td colspan="6" class="text-center py-5" style="color:#94a3b8;">
+                        <i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                        No movements recorded yet.
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+</div><!-- recent movements card -->
+    </div><!-- col-lg-7 -->
+</div><!-- chart + movements row -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% if deliveries_by_branch %}
+<script>
+    const labels = [{% for row in deliveries_by_branch %}"{{ row.destination_branch|default:'Unspecified' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const data   = [{% for row in deliveries_by_branch %}{{ row.total_qty }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    new Chart(document.getElementById('branchChart'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Total Qty Delivered',
+                data: data,
+                backgroundColor: 'rgba(79,70,229,0.12)',
+                borderColor: '#4f46e5',
+                borderWidth: 2,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: { label: ctx => ` ${ctx.parsed.y} units` }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

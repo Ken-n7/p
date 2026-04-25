@@ -1,30 +1,40 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}Products{% endblock %}
-
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="fas fa-box"></i> Products</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">Products</h5>
+        <p class="text-muted small mb-0">Manage your product catalog and stock levels.</p>
+    </div>
     <a href="{% url 'product_create' %}" class="btn btn-success btn-sm">
         <i class="fas fa-plus"></i> Add Product
     </a>
 </div>
 
-<form method="get" class="mb-3 d-flex gap-2">
-    <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm" placeholder="Search by name or SKU...">
-    <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="fas fa-search"></i></button>
-    {% if query %}<a href="{% url 'product_list' %}" class="btn btn-outline-danger btn-sm">Clear</a>{% endif %}
-</form>
+<div class="card mb-3" style="border-radius:10px!important;">
+    <div class="card-body py-2 px-3">
+        <form method="get" class="d-flex gap-2 align-items-center">
+            <i class="fas fa-search" style="color:#94a3b8;font-size:0.8rem;"></i>
+            <input type="text" name="q" value="{{ query }}" class="form-control border-0 shadow-none ps-1"
+                style="font-size:0.855rem;" placeholder="Search by name or SKU…">
+            {% if query %}
+            <a href="{% url 'product_list' %}" class="btn btn-sm" style="color:#ef4444;font-size:0.76rem;white-space:nowrap;">
+                <i class="fas fa-times"></i> Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+</div>
 
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead class="table-light">
+            <thead>
                 <tr>
                     <th>Name</th>
                     <th>SKU</th>
                     <th>Category</th>
-                    <th>Qty</th>
+                    <th>Stock</th>
                     <th>Batch</th>
                     <th>Production</th>
                     <th>Expiry</th>
@@ -34,29 +44,38 @@
             </thead>
             <tbody>
                 {% for p in products %}
-                <tr class="{% if p.quantity < 10 %}table-warning{% endif %}">
-                    <td><strong>{{ p.name }}</strong></td>
+                <tr {% if p.quantity < 10 %}style="background:#fffbeb;"{% endif %}>
+                    <td style="font-weight:500;">{{ p.name }}</td>
                     <td><code>{{ p.sku }}</code></td>
-                    <td>{{ p.category }}</td>
+                    <td style="color:#64748b;">{{ p.category }}</td>
                     <td>
-                        {{ p.quantity }}
-                        {% if p.quantity < 10 %}<span class="badge bg-warning text-dark ms-1">Low</span>{% endif %}
+                        <span style="font-weight:600;">{{ p.quantity }}</span>
+                        {% if p.quantity < 10 %}
+                        <span class="badge ms-1" style="background:#fef3c7;color:#92400e;">Low</span>
+                        {% endif %}
                     </td>
-                    <td>{{ p.batch_number|default:"—" }}</td>
-                    <td>{{ p.production_date|default:"—" }}</td>
-                    <td>{{ p.expiration_date|default:"—" }}</td>
-                    <td>{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
+                    <td style="color:#64748b;">{{ p.batch_number|default:"—" }}</td>
+                    <td style="color:#64748b;">{{ p.production_date|default:"—" }}</td>
+                    <td style="color:{% if p.expiration_date %}#64748b{% else %}#94a3b8{% endif %};">
+                        {{ p.expiration_date|default:"—" }}
+                    </td>
+                    <td style="color:#64748b;">{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
                     <td class="text-nowrap">
-                        <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline-secondary btn-sm">
+                        <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline-secondary btn-sm me-1">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a href="{% url 'product_delete' p.pk %}" class="btn btn-outline-danger btn-sm">
+                        <a href="{% url 'product_delete' p.pk %}" class="btn btn-sm" style="border:1px solid #fecaca;color:#ef4444;">
                             <i class="fas fa-trash"></i>
                         </a>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="9" class="text-center py-4 text-muted">No products found.</td></tr>
+                <tr>
+                    <td colspan="9" class="text-center py-5" style="color:#94a3b8;">
+                        <i class="fas fa-box-open" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                        No products found.
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

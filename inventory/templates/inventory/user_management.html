@@ -1,10 +1,11 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}User Management{% endblock %}
-
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="fas fa-users-cog"></i> User Management</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">User Management</h5>
+        <p class="text-muted small mb-0">Manage system users and their roles.</p>
+    </div>
     <a href="{% url 'user_create' %}" class="btn btn-success btn-sm">
         <i class="fas fa-user-plus"></i> Add User
     </a>
@@ -13,10 +14,9 @@
 <div class="card">
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead class="table-light">
+            <thead>
                 <tr>
-                    <th>Username</th>
-                    <th>Full Name</th>
+                    <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
@@ -26,41 +26,62 @@
             <tbody>
                 {% for u in users %}
                 <tr>
-                    <td><strong>{{ u.username }}</strong></td>
-                    <td>{{ u.get_full_name|default:"—" }}</td>
-                    <td>{{ u.email|default:"—" }}</td>
+                    <td>
+                        <div style="font-weight:600;">{{ u.username }}</div>
+                        <div style="font-size:0.78rem;color:#94a3b8;">{{ u.get_full_name|default:"No name set" }}</div>
+                    </td>
+                    <td style="color:#64748b;">{{ u.email|default:"—" }}</td>
                     <td>
                         {% if u.profile %}
-                            {% if u.profile.role == 'admin' %}<span class="badge bg-danger">{{ u.profile.get_role_display }}</span>
-                            {% elif u.profile.role == 'warehouse' %}<span class="badge bg-primary">{{ u.profile.get_role_display }}</span>
-                            {% elif u.profile.role == 'sales' %}<span class="badge bg-success">{{ u.profile.get_role_display }}</span>
-                            {% else %}<span class="badge bg-secondary">{{ u.profile.get_role_display }}</span>
+                            {% if u.profile.role == 'admin' %}
+                                <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ u.profile.get_role_display }}</span>
+                            {% elif u.profile.role == 'warehouse' %}
+                                <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ u.profile.get_role_display }}</span>
+                            {% elif u.profile.role == 'sales' %}
+                                <span class="badge" style="background:#dcfce7;color:#15803d;">{{ u.profile.get_role_display }}</span>
+                            {% else %}
+                                <span class="badge" style="background:#f3e8ff;color:#7c3aed;">{{ u.profile.get_role_display }}</span>
                             {% endif %}
+                        {% elif u.is_superuser %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">Superuser</span>
                         {% else %}
-                            <span class="badge bg-light text-dark">No Role</span>
+                            <span class="badge" style="background:#f1f5f9;color:#64748b;">No Role</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if u.is_active %}<span class="badge bg-success">Active</span>
-                        {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                        {% if u.is_active %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">Active</span>
+                        {% else %}
+                            <span class="badge" style="background:#f1f5f9;color:#94a3b8;">Inactive</span>
+                        {% endif %}
                     </td>
-                    <td class="d-flex gap-1 flex-wrap">
-                        <a href="{% url 'user_edit' u.pk %}" class="btn btn-outline-secondary btn-sm">
+                    <td class="text-nowrap">
+                        <a href="{% url 'user_edit' u.pk %}" class="btn btn-outline-secondary btn-sm me-1">
                             <i class="fas fa-edit"></i> Edit
                         </a>
                         {% if not u.is_superuser and u != request.user %}
-                        <a href="{% url 'user_deactivate' u.pk %}" class="btn btn-outline-warning btn-sm">
-                            {% if u.is_active %}<i class="fas fa-ban"></i> Deactivate
-                            {% else %}<i class="fas fa-check-circle"></i> Activate{% endif %}
+                        <a href="{% url 'user_deactivate' u.pk %}" class="btn btn-sm me-1"
+                            style="border:1px solid #fde68a;color:#d97706;background:transparent;">
+                            {% if u.is_active %}
+                                <i class="fas fa-ban"></i> Deactivate
+                            {% else %}
+                                <i class="fas fa-check-circle"></i> Activate
+                            {% endif %}
                         </a>
-                        <a href="{% url 'user_delete' u.pk %}" class="btn btn-outline-danger btn-sm">
-                            <i class="fas fa-trash"></i> Delete
+                        <a href="{% url 'user_delete' u.pk %}" class="btn btn-sm"
+                            style="border:1px solid #fecaca;color:#ef4444;background:transparent;">
+                            <i class="fas fa-trash"></i>
                         </a>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="text-center py-4 text-muted">No users found.</td></tr>
+                <tr>
+                    <td colspan="5" class="text-center py-5" style="color:#94a3b8;">
+                        <i class="fas fa-users" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                        No users found.
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
