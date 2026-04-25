@@ -179,7 +179,7 @@ def movement_create(request):
         messages.error(request, 'Access denied. Recording movements is for admin, warehouse, and sales roles only.')
         return redirect('movement_list')
     if request.method == 'POST':
-        form = InventoryMovementForm(request.POST)
+        form = InventoryMovementForm(request.POST, user=request.user)
         if form.is_valid():
             movement = form.save(commit=False)
             movement.created_by = request.user
@@ -189,7 +189,7 @@ def movement_create(request):
             messages.success(request, 'Movement recorded.')
             return redirect('movement_list')
     else:
-        form = InventoryMovementForm()
+        form = InventoryMovementForm(user=request.user)
     return render(request, 'inventory/movement_form.html', {'form': form, 'title': 'Record Movement'})
 
 

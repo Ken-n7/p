@@ -190,6 +190,14 @@ None remaining.
 - Scheduled database backup (pg_dump / mysqldump + cron or Django-dbbackup)
 - Email or SMS notifications for low stock and near-expiry items
 
+### Pre-sale Blockers (required before handing to a real client)
+- **Per-branch stock tracking** — currently only global `Product.quantity` is tracked; clients need to see how much each branch holds
+- **Movement void/correction mechanism** — wrong entries are permanent; real clients need a way to reverse or correct
+- **Pagination** — all list pages (products, movements, reconciliation, audit log) will break under real data volume
+- **Date range filters on reports** — clients need monthly/weekly breakdowns, not all-time dumps
+- **Secret key + ALLOWED_HOSTS** — hardcoded secret key and open hosts are an immediate security red flag
+- **Printable delivery receipt** — real deliveries need a document to accompany the goods
+
 ---
 
 ## Development Notes
