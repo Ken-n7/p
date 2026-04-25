@@ -1,6 +1,24 @@
 {% extends 'inventory/base.html' %}
 {% load crispy_forms_tags %}
 
+{% block extra_head %}
+<style>
+#div_id_confirm_override {
+    display: none;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 4px;
+}
+#div_id_confirm_override label {
+    color: #92400e;
+    font-weight: 500;
+    font-size: 0.84rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-7">
@@ -24,4 +42,51 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const typeSelect    = document.getElementById('id_movement_type');
+    const branchWrapper = document.getElementById('div_id_destination_branch');
+    const branchSelect  = document.getElementById('id_destination_branch');
+    const refWrapper    = document.getElementById('div_id_reference_no');
+    const refInput      = document.getElementById('id_reference_no');
+
+    const NEEDS_BRANCH = new Set(['delivery_out', 'back_order', 'return_in']);
+    const NEEDS_REF    = new Set(['delivery_out', 'return_in']);
+    const TRANSITION   = 'max-height 0.3s ease, opacity 0.25s ease';
+
+    [branchWrapper, refWrapper].forEach(w => {
+        w.style.overflow   = 'hidden';
+        w.style.transition = TRANSITION;
+    });
+
+    function toggle(wrapper, clearEl, show, instant) {
+        if (!show && clearEl) clearEl.value = '';
+        if (instant) wrapper.style.transition = 'none';
+        wrapper.style.maxHeight = show ? '120px' : '0';
+        wrapper.style.opacity   = show ? '1'     : '0';
+        if (instant) {
+            wrapper.offsetHeight;
+            wrapper.style.transition = TRANSITION;
+        }
+    }
+
+    function update(instant) {
+        const type = typeSelect.value;
+        toggle(branchWrapper, branchSelect, NEEDS_BRANCH.has(type), instant);
+        toggle(refWrapper,    refInput,     NEEDS_REF.has(type),    instant);
+    }
+
+    update(true);
+    typeSelect.addEventListener('change', () => update(false));
+
+    // Show override checkbox only when server returned a warning on it
+    const overrideWrapper = document.getElementById('div_id_confirm_override');
+    if (overrideWrapper && overrideWrapper.querySelector('.invalid-feedback, .errorlist')) {
+        overrideWrapper.style.display = 'block';
+    }
+});
+</script>
 {% endblock %}
