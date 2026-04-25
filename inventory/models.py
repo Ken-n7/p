@@ -21,6 +21,18 @@ class Product(models.Model):
         ordering = ['-created_at']
 
 
+class Branch(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    address = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name']
+        verbose_name_plural = 'Branches'
+
+
 class InventoryMovement(models.Model):
     MOVEMENT_TYPES = [
         ('production_in', 'Production In'),
@@ -38,7 +50,7 @@ class InventoryMovement(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
     quantity = models.PositiveIntegerField()
-    destination_branch = models.CharField(max_length=100, blank=True)
+    destination_branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='movements')
     reference_no = models.CharField(max_length=100, blank=True)
     note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -62,7 +74,7 @@ class InventoryMovement(models.Model):
 class RetailerSales(models.Model):
     """For reconciliation with SM / Savemore"""
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    branch = models.CharField(max_length=100)
+    branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
     sold_quantity = models.PositiveIntegerField()
     sales_date = models.DateField()
     internal_delivery_qty = models.PositiveIntegerField(null=True, blank=True)

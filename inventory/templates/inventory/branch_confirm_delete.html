@@ -1,0 +1,29 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'branch_list' %}" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+        <i class="fas fa-arrow-left" style="font-size:0.72rem;margin-right:4px;"></i>Branches
+    </a>
+    <h5 class="mb-0 mt-1">Delete Branch</h5>
+</div>
+
+<div class="card" style="max-width:480px;">
+    <div class="card-body p-4">
+        <div class="alert mb-3" style="background:#fee2e2;border-left:3px solid #dc2626;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#7f1d1d;">
+            <i class="fas fa-exclamation-triangle" style="color:#dc2626;margin-right:6px;"></i>
+            <strong>Warning:</strong> Deleting <strong>{{ branch.name }}</strong> will clear the branch reference from all linked movements and reconciliation records. This cannot be undone.
+        </div>
+        <p style="font-size:0.88rem;color:#334155;">Are you sure you want to delete <strong>{{ branch.name }}</strong>?</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;">
+                    <i class="fas fa-trash"></i> Yes, Delete
+                </button>
+                <a href="{% url 'branch_list' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -335,6 +335,9 @@
         <a href="{% url 'movement_list' %}" class="sidebar-link {% if 'movement' in url_name %}active{% endif %}">
             <i class="fas fa-exchange-alt nav-icon"></i> Movements
         </a>
+        <a href="{% url 'branch_list' %}" class="sidebar-link {% if 'branch' in url_name %}active{% endif %}">
+            <i class="fas fa-store nav-icon"></i> Branches
+        </a>
         {% if request.user.is_superuser or request.user.profile.role == 'admin' or request.user.profile.role == 'accountant' %}
         <a href="{% url 'reconciliation_list' %}" class="sidebar-link {% if 'reconciliation' in url_name %}active{% endif %}">
             <i class="fas fa-balance-scale nav-icon"></i> Reconciliation

@@ -1,5 +1,11 @@
 from django.contrib import admin
-from .models import Product, InventoryMovement, RetailerSales
+from .models import Product, InventoryMovement, RetailerSales, Branch
+
+
+@admin.register(Branch)
+class BranchAdmin(admin.ModelAdmin):
+    list_display = ['name', 'address']
+    search_fields = ['name']
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):

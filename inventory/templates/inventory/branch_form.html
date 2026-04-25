@@ -1,0 +1,26 @@
+{% extends 'inventory/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'branch_list' %}" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+        <i class="fas fa-arrow-left" style="font-size:0.72rem;margin-right:4px;"></i>Branches
+    </a>
+    <h5 class="mb-0 mt-1">{{ title }}</h5>
+</div>
+
+<div class="card" style="max-width:520px;">
+    <div class="card-body p-4">
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div class="d-flex gap-2 mt-3">
+                <button type="submit" class="btn btn-primary">
+                    {% if branch %}Save Changes{% else %}Add Branch{% endif %}
+                </button>
+                <a href="{% url 'branch_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

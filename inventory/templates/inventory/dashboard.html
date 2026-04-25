@@ -194,7 +194,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 {% if deliveries_by_branch %}
 <script>
-    const labels = [{% for row in deliveries_by_branch %}"{{ row.destination_branch|default:'Unspecified' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    const labels = [{% for row in deliveries_by_branch %}"{{ row.destination_branch__name|default:'Unspecified' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
     const data   = [{% for row in deliveries_by_branch %}{{ row.total_qty }}{% if not forloop.last %},{% endif %}{% endfor %}];
 
     new Chart(document.getElementById('branchChart'), {

@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import date, timedelta
 import random
 
-from inventory.models import Product, InventoryMovement, RetailerSales, UserProfile, AuditLog
+from inventory.models import Product, InventoryMovement, RetailerSales, UserProfile, AuditLog, Branch
 
 
 def log(user, action, obj, changes=''):
@@ -18,28 +18,28 @@ def log(user, action, obj, changes=''):
     )
 
 
-BRANCHES = [
-    'SM Grand Central',
-    'SM San Jose Del Monte',
-    'Savemore Muzon',
-    'SM Tarlac',
-    'SM Telabastagan',
-    'Savemore Apalit',
+BRANCH_DATA = [
+    ('SM Grand Central',      'Grand Central Mall, Caloocan City'),
+    ('SM San Jose Del Monte', 'SM City San Jose Del Monte, Bulacan'),
+    ('Savemore Muzon',        'Muzon, San Jose Del Monte, Bulacan'),
+    ('SM Tarlac',             'SM City Tarlac, Tarlac City'),
+    ('SM Telabastagan',       'SM City Telabastagan, San Fernando, Pampanga'),
+    ('Savemore Apalit',       'Apalit, Pampanga'),
 ]
 
 PRODUCTS_DATA = [
-    ('Kangkong', 'VEG-001', 'Leafy Vegetables'),
-    ('Pechay', 'VEG-002', 'Leafy Vegetables'),
-    ('Sitaw', 'VEG-003', 'Pod Vegetables'),
-    ('Ampalaya', 'VEG-004', 'Gourd Vegetables'),
-    ('Kamote Tops', 'VEG-005', 'Leafy Vegetables'),
-    ('Malunggay', 'VEG-006', 'Leafy Vegetables'),
-    ('Okra', 'VEG-007', 'Pod Vegetables'),
-    ('Talong', 'VEG-008', 'Fruit Vegetables'),
-    ('Kalabasa', 'VEG-009', 'Gourd Vegetables'),
-    ('Kamatis', 'VEG-010', 'Fruit Vegetables'),
+    ('Kangkong',      'VEG-001', 'Leafy Vegetables'),
+    ('Pechay',        'VEG-002', 'Leafy Vegetables'),
+    ('Sitaw',         'VEG-003', 'Pod Vegetables'),
+    ('Ampalaya',      'VEG-004', 'Gourd Vegetables'),
+    ('Kamote Tops',   'VEG-005', 'Leafy Vegetables'),
+    ('Malunggay',     'VEG-006', 'Leafy Vegetables'),
+    ('Okra',          'VEG-007', 'Pod Vegetables'),
+    ('Talong',        'VEG-008', 'Fruit Vegetables'),
+    ('Kalabasa',      'VEG-009', 'Gourd Vegetables'),
+    ('Kamatis',       'VEG-010', 'Fruit Vegetables'),
     ('Sibuyas Dahon', 'VEG-011', 'Leafy Vegetables'),
-    ('Labanos', 'VEG-012', 'Root Vegetables'),
+    ('Labanos',       'VEG-012', 'Root Vegetables'),
 ]
 
 
@@ -49,13 +49,25 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Seeding data...')
 
+        # ── Branches ──────────────────────────────────────────────────
+        branches = {}
+        for name, address in BRANCH_DATA:
+            branch, created = Branch.objects.get_or_create(
+                name=name,
+                defaults={'address': address}
+            )
+            branches[name] = branch
+            if created:
+                self.stdout.write(f'  Created branch: {name}')
+        branch_list = list(branches.values())
+
         # ── Users ─────────────────────────────────────────────────────
         users = {}
         role_defs = [
-            ('warehouse_staff', 'warehouse', 'Maria', 'Santos'),
-            ('sales_rep', 'sales', 'Jose', 'Reyes'),
-            ('accountant', 'accountant', 'Ana', 'Cruz'),
-            ('admin_user', 'admin', 'Pedro', 'Dela Cruz'),
+            ('warehouse_staff', 'warehouse', 'Maria',  'Santos'),
+            ('sales_rep',       'sales',     'Jose',   'Reyes'),
+            ('accountant',      'accountant','Ana',    'Cruz'),
+            ('admin_user',      'admin',     'Pedro',  'Dela Cruz'),
         ]
         superuser = User.objects.filter(is_superuser=True).first()
 
@@ -74,8 +86,8 @@ class Command(BaseCommand):
                 self.stdout.write(f'  Created user: {username} ({role}) — password: efp2025')
 
         warehouse = users['warehouse']
-        sales = users['sales']
-        today = timezone.now().date()
+        sales     = users['sales']
+        today     = timezone.now().date()
 
         # ── Products ──────────────────────────────────────────────────
         products = []
@@ -116,9 +128,9 @@ class Command(BaseCommand):
         # ── Delivery Out movements ────────────────────────────────────
         delivery_count = 0
         for prod in products:
-            for branch in random.sample(BRANCHES, k=random.randint(3, 6)):
+            for branch in random.sample(branch_list, k=random.randint(3, 6)):
                 qty = random.randint(10, 35)
-                ref = f'DEL-{prod.sku}-{branch[:3].upper()}'
+                ref = f'DEL-{prod.sku}-{branch.name[:3].upper()}'
                 mv, created = InventoryMovement.objects.get_or_create(
                     product=prod,
                     movement_type='delivery_out',
@@ -126,12 +138,13 @@ class Command(BaseCommand):
                     defaults={
                         'quantity': qty,
                         'destination_branch': branch,
-                        'note': f'Weekly delivery to {branch}',
+                        'note': f'Weekly delivery to {branch.name}',
                         'created_by': sales,
                     }
                 )
                 if created:
-                    log(sales, 'create', mv, f"type=delivery_out, qty={qty}, product={prod}, branch={branch}")
+                    log(sales, 'create', mv,
+                        f"type=delivery_out, qty={qty}, product={prod}, branch={branch.name}")
                     delivery_count += 1
         self.stdout.write(f'  Created {delivery_count} delivery movements')
 
@@ -153,8 +166,8 @@ class Command(BaseCommand):
 
         # ── Return In movements ───────────────────────────────────────
         for prod in random.sample(products, k=3):
-            qty = random.randint(3, 8)
-            branch = random.choice(BRANCHES)
+            qty    = random.randint(3, 8)
+            branch = random.choice(branch_list)
             mv, created = InventoryMovement.objects.get_or_create(
                 product=prod,
                 movement_type='return_in',
@@ -162,16 +175,17 @@ class Command(BaseCommand):
                 defaults={
                     'quantity': qty,
                     'destination_branch': branch,
-                    'note': f'Unsold stock returned from {branch}',
+                    'note': f'Unsold stock returned from {branch.name}',
                     'created_by': sales,
                 }
             )
             if created:
-                log(sales, 'create', mv, f"type=return_in, qty={qty}, product={prod}, branch={branch}")
+                log(sales, 'create', mv,
+                    f"type=return_in, qty={qty}, product={prod}, branch={branch.name}")
 
         # ── Back Orders ───────────────────────────────────────────────
         for prod in random.sample(products, k=2):
-            branch = random.choice(BRANCHES)
+            branch = random.choice(branch_list)
             mv, created = InventoryMovement.objects.get_or_create(
                 product=prod,
                 movement_type='back_order',
@@ -179,20 +193,21 @@ class Command(BaseCommand):
                 defaults={
                     'quantity': random.randint(10, 25),
                     'destination_branch': branch,
-                    'note': f'Insufficient stock for {branch} order',
+                    'note': f'Insufficient stock for {branch.name} order',
                     'created_by': sales,
                 }
             )
             if created:
-                log(sales, 'create', mv, f"type=back_order, product={prod}, branch={branch}")
+                log(sales, 'create', mv,
+                    f"type=back_order, product={prod}, branch={branch.name}")
 
         # ── Retailer Sales (Reconciliation) ───────────────────────────
         recon_count = 0
         for prod in random.sample(products, k=8):
-            for branch in random.sample(BRANCHES, k=random.randint(2, 4)):
+            for branch in random.sample(branch_list, k=random.randint(2, 4)):
                 delivery_qty = random.randint(15, 35)
-                variance = random.choice([-3, -2, -1, 0, 0, 0, 1, 2])
-                sold_qty = max(0, delivery_qty + variance)
+                variance     = random.choice([-3, -2, -1, 0, 0, 0, 1, 2])
+                sold_qty     = max(0, delivery_qty + variance)
                 rec, created = RetailerSales.objects.get_or_create(
                     product=prod,
                     branch=branch,
@@ -204,7 +219,8 @@ class Command(BaseCommand):
                 )
                 if created:
                     log(users['accountant'], 'create', rec,
-                        f"branch={branch}, product={prod}, sold={sold_qty}, delivery={delivery_qty}, discrepancy={rec.discrepancy}")
+                        f"branch={branch.name}, product={prod}, sold={sold_qty}, "
+                        f"delivery={delivery_qty}, discrepancy={rec.discrepancy}")
                     recon_count += 1
         self.stdout.write(f'  Created {recon_count} reconciliation records')
 
