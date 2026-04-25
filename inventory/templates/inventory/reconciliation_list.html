@@ -1,86 +1,116 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}Stock Reconciliation{% endblock %}
-
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Stock Reconciliation (SM & Savemore)</h2>
-    <a href="{% url 'reconciliation_add' %}" class="btn btn-success">
-        <i class="fas fa-plus"></i> Add Retailer Sales Data
+    <div>
+        <h5 class="mb-0">Stock Reconciliation</h5>
+        <p class="text-muted small mb-0">SM & Savemore branch sales vs internal delivery.</p>
+    </div>
+    <a href="{% url 'reconciliation_add' %}" class="btn btn-success btn-sm">
+        <i class="fas fa-plus"></i> Add Sales Data
     </a>
 </div>
 
-<div class="alert alert-info small mb-4">
-    <i class="fas fa-lock"></i> <strong>Reconciliation records are permanent.</strong>
-    Once submitted, sales data cannot be edited to maintain an accurate audit trail.
-    If a record is incorrect, submit a new corrected entry and note the discrepancy.
+<div class="alert mb-4" style="background:#f0f9ff;border-left:3px solid #0284c7;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#0c4a6e;">
+    <i class="fas fa-lock" style="color:#0284c7;margin-right:6px;"></i>
+    <strong>Records are permanent.</strong>
+    If incorrect, submit a new corrected entry and note the discrepancy.
 </div>
 
 <!-- Summary Cards -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-info">
-            <div class="card-body">
-                <h5>Total Records</h5>
-                <h3>{{ reconciliations.count }}</h3>
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-file-alt" style="color:#0369a1;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Records</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">{{ reconciliations.count }}</div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-danger">
-            <div class="card-body">
-                <h5>Total Discrepancy</h5>
-                <h3>{{ total_discrepancy }}</h3>
-                <small>units</small>
+    <div class="col-sm-4">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Discrepancy</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:{% if total_discrepancy != 0 %}#dc2626{% else %}#0f172a{% endif %};line-height:1.1;">
+                        {{ total_discrepancy }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success">
-            <div class="card-body">
-                <h5>Reconciled Items</h5>
-                <h3>{{ reconciled_count }}</h3>
+    <div class="col-sm-4">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-check-circle" style="color:#16a34a;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Reconciled</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">{{ reconciled_count }}</div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<table class="table table-hover table-bordered">
-    <thead class="table-success">
-        <tr>
-            <th>Date</th>
-            <th>Branch</th>
-            <th>Product</th>
-            <th>Sold Qty (Retailer)</th>
-            <th>Internal Delivery</th>
-            <th>Discrepancy</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for r in reconciliations %}
-        <tr>
-            <td>{{ r.sales_date|date:"M d, Y" }}</td>
-            <td>{{ r.branch }}</td>
-            <td><strong>{{ r.product }}</strong></td>
-            <td class="text-end">{{ r.sold_quantity }}</td>
-            <td class="text-end">{{ r.internal_delivery_qty|default:"-" }}</td>
-            <td class="text-end fw-bold">
-                <span class="badge bg-{% if r.discrepancy and r.discrepancy < 0 %}danger{% elif r.discrepancy > 0 %}warning{% else %}success{% endif %}">
-                    {{ r.discrepancy|default:0 }}
-                </span>
-            </td>
-            <td>
-                {% if r.reconciled %}
-                    <span class="badge bg-success">✅ Reconciled</span>
-                {% else %}
-                    <span class="badge bg-warning">⚠️ Pending</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="text-center py-5">No reconciliation data yet. Add some sales reports from SM/Savemore.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Branch</th>
+                    <th>Product</th>
+                    <th class="text-end">Sold (Retailer)</th>
+                    <th class="text-end">Internal Delivery</th>
+                    <th class="text-end">Discrepancy</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reconciliations %}
+                <tr>
+                    <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
+                    <td style="font-weight:500;">{{ r.branch }}</td>
+                    <td>{{ r.product }}</td>
+                    <td class="text-end">{{ r.sold_quantity }}</td>
+                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}</td>
+                    <td class="text-end">
+                        {% if r.discrepancy and r.discrepancy < 0 %}
+                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ r.discrepancy }}</span>
+                        {% elif r.discrepancy > 0 %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">+{{ r.discrepancy }}</span>
+                        {% else %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.reconciled %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
+                        {% else %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5" style="color:#94a3b8;">
+                        <i class="fas fa-balance-scale" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                        No reconciliation data yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

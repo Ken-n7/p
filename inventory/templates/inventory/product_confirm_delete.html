@@ -1,23 +1,23 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}Delete Product{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0"><i class="fas fa-trash"></i> Delete Product</h5>
-            </div>
-            <div class="card-body">
-                <p>Are you sure you want to delete <strong>{{ object.name }}</strong> ({{ object.sku }})?</p>
-                <p class="text-muted small">This will also delete all movement records associated with this product. This action cannot be undone.</p>
-                <form method="post">
+<div class="row justify-content-center mt-2">
+    <div class="col-md-5">
+        <div class="card" style="border-top:3px solid #ef4444!important;">
+            <div class="card-body p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                    <i class="fas fa-trash" style="color:#dc2626;"></i>
+                </div>
+                <h5 class="mb-1">Delete Product</h5>
+                <p class="text-muted small mb-3">This action cannot be undone.</p>
+                <p style="font-size:0.875rem;">Delete <strong>{{ object.name }}</strong> <code>{{ object.sku }}</code>?
+                All associated movement records will also be removed.</p>
+                <form method="post" class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
                     {% csrf_token %}
-                    <a href="{% url 'product_list' %}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-danger ms-2">
-                        <i class="fas fa-trash"></i> Yes, Delete
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
                     </button>
+                    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">Cancel</a>
                 </form>
             </div>
         </div>

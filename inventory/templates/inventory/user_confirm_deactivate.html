@@ -1,26 +1,25 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}{{ title }}{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center mt-4">
+<div class="row justify-content-center mt-2">
     <div class="col-md-5">
-        <div class="card border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0">
-                    <i class="fas fa-{% if target_user.is_active %}ban{% else %}check-circle{% endif %}"></i>
-                    {{ title }}
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if target_user.is_active %}
-                <p>Deactivate user <strong>{{ target_user.username }}</strong>? They will no longer be able to log in.</p>
-                {% else %}
-                <p>Reactivate user <strong>{{ target_user.username }}</strong>? They will be able to log in again.</p>
-                {% endif %}
-                <form method="post" class="d-flex gap-2 mt-3">
+        <div class="card" style="border-top:3px solid #d97706!important;">
+            <div class="card-body p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                    <i class="fas fa-ban" style="color:#d97706;"></i>
+                </div>
+                <h5 class="mb-1">{% if target_user.is_active %}Deactivate{% else %}Activate{% endif %} User</h5>
+                <p class="text-muted small mb-3">This can be reversed at any time.</p>
+                <p style="font-size:0.875rem;">
+                    {% if target_user.is_active %}
+                        Deactivate <strong>{{ target_user.username }}</strong>? They will no longer be able to log in.
+                    {% else %}
+                        Reactivate <strong>{{ target_user.username }}</strong>? They will be able to log in again.
+                    {% endif %}
+                </p>
+                <form method="post" class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn" style="background:#d97706;color:#fff;border:none;">
                         {% if target_user.is_active %}Deactivate{% else %}Activate{% endif %}
                     </button>
                     <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">Cancel</a>
