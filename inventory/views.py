@@ -74,6 +74,13 @@ def dashboard(request):
         expiration_date__lte=timezone.now().date() + timezone.timedelta(days=7)
     )
     recent_movements = InventoryMovement.objects.select_related('product', 'created_by').order_by('-created_at')[:10]
+    deliveries_by_branch = (
+        InventoryMovement.objects
+        .filter(movement_type='delivery_out')
+        .values('destination_branch')
+        .annotate(total_qty=Sum('quantity'))
+        .order_by('-total_qty')
+    )
 
     context = {
         'total_products': total_products,
@@ -83,6 +90,7 @@ def dashboard(request):
         'near_expiry_count': near_expiry.count(),
         'near_expiry': near_expiry[:5],
         'recent_movements': recent_movements,
+        'deliveries_by_branch': deliveries_by_branch,
         'user_role': role,
         'title': 'Dashboard',
     }
