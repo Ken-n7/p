@@ -20,6 +20,10 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-yl9(c748-il@7!(pwp2xu
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}" for host in os.environ.get('RAILWAY_PUBLIC_DOMAIN', '').split(',') if host
+] or ['https://*.up.railway.app']
+
 
 # Application definition
 
