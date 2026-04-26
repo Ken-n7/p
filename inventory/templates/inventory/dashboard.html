@@ -77,6 +77,46 @@
     </div>
 </div>
 
+{% if can_see_recon %}
+<!-- Reconciliation KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-hourglass-half" style="color:#d97706;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Pending Reconciliation</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if pending_recon_count > 0 %}#d97706{% else %}#0f172a{% endif %};">{{ pending_recon_count }}</div>
+                    <div style="font-size:0.7rem;color:#94a3b8;">Unresolved records</div>
+                </div>
+            </div>
+            <div style="padding:0 16px 12px;">
+                <a href="{% url 'reconciliation_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
+                    View reconciliation <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3 p-4">
+                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-scale-unbalanced" style="color:#dc2626;font-size:1rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Pending Discrepancy</div>
+                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if pending_discrepancy > 0 %}#dc2626{% else %}#0f172a{% endif %};">{{ pending_discrepancy }}</div>
+                    <div style="font-size:0.7rem;color:#94a3b8;">Unsold units unaccounted</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Alert Banners -->
 {% if low_stock %}
 <div class="alert mb-3" style="background:#fffbeb;border-left:3px solid #d97706;border-radius:10px;padding:12px 16px;">

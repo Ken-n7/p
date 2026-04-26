@@ -45,7 +45,11 @@
             <tbody>
                 {% for p in products %}
                 <tr {% if p.quantity < 10 %}style="background:#fffbeb;"{% endif %}>
-                    <td style="font-weight:500;">{{ p.name }}</td>
+                    <td style="font-weight:500;">
+                        <a href="{% url 'product_detail' p.pk %}" style="color:#4f46e5;text-decoration:none;">
+                            {{ p.name }}
+                        </a>
+                    </td>
                     <td><code>{{ p.sku }}</code></td>
                     <td style="color:#64748b;">{{ p.category }}</td>
                     <td>
@@ -69,16 +73,15 @@
                         </a>
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9" class="text-center py-5" style="color:#94a3b8;">
-                        <i class="fas fa-box-open" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-                        No products found.
-                    </td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if not products %}
+        <div class="text-center py-5" style="color:#94a3b8;">
+            <i class="fas fa-box-open" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            No products found.
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

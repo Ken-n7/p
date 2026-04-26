@@ -75,16 +75,15 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center py-5" style="color:#94a3b8;">
-                        <i class="fas fa-users" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-                        No users found.
-                    </td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
+        {% if not users %}
+        <div class="text-center py-5" style="color:#94a3b8;">
+            <i class="fas fa-users" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            No users found.
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
