@@ -1,0 +1,52 @@
+{% extends 'inventory/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <h5 class="mb-0">Resolve Discrepancy</h5>
+            <p class="text-muted small mb-0">Record how this discrepancy was settled. This cannot be undone.</p>
+        </div>
+
+        <!-- Record summary -->
+        <div class="card mb-3" style="border-left:3px solid #f59e0b;">
+            <div class="card-body p-3" style="font-size:0.85rem;">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <span class="text-muted">Branch</span><br>
+                        <strong>{{ record.branch }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Product</span><br>
+                        <strong>{{ record.product.name }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Sales Date</span><br>
+                        <strong>{{ record.sales_date|date:"M d, Y" }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted">Discrepancy</span><br>
+                        <strong style="color:#92400e;">+{{ record.discrepancy }} unsold units</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-check"></i> Mark as Resolved
+                        </button>
+                        <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -73,6 +73,14 @@ class InventoryMovement(models.Model):
 
 class RetailerSales(models.Model):
     """For reconciliation with SM / Savemore"""
+
+    RESOLUTION_CHOICES = [
+        ('pending',      'Pending'),
+        ('returned',     'Returned to Warehouse'),
+        ('written_off',  'Written Off'),
+        ('corrected',    'Corrected Entry'),
+    ]
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
     sold_quantity = models.PositiveIntegerField()
@@ -80,8 +88,12 @@ class RetailerSales(models.Model):
     internal_delivery_qty = models.PositiveIntegerField(null=True, blank=True)
     discrepancy = models.IntegerField(null=True, blank=True)
     reconciled = models.BooleanField(default=False)
+    resolution_status = models.CharField(max_length=20, choices=RESOLUTION_CHOICES, default='pending')
+    resolution_note = models.TextField(blank=True)
+    resolved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='resolved_sales')
+    resolved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def save(self, *args, **kwargs):
         if self.internal_delivery_qty is not None:
             self.discrepancy = self.internal_delivery_qty - self.sold_quantity

@@ -17,6 +17,8 @@ urlpatterns = [
     # Reconciliation
     path('reconciliation/', views.reconciliation_list, name='reconciliation_list'),
     path('reconciliation/add/', views.reconciliation_add, name='reconciliation_add'),
+    path('reconciliation/<int:pk>/resolve/', views.reconciliation_resolve, name='reconciliation_resolve'),
+    path('sales-summary/', views.sales_summary, name='sales_summary'),
 
     # Branches
     path('branches/', views.branch_list, name='branch_list'),

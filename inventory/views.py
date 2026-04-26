@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.db.models import Sum, Count
 
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
-from .forms import ProductForm, InventoryMovementForm, RetailerSalesForm, BranchForm
+from .forms import ProductForm, InventoryMovementForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -212,6 +212,41 @@ def reconciliation_list(request):
 
 
 @login_required
+def reconciliation_resolve(request, pk):
+    if not _has_role(request.user, 'admin', 'accountant'):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    record = get_object_or_404(RetailerSales, pk=pk)
+
+    if record.reconciled or record.resolution_status != 'pending':
+        messages.info(request, 'This record is already resolved.')
+        return redirect('reconciliation_list')
+
+    if request.method == 'POST':
+        form = ReconciliationResolveForm(request.POST)
+        if form.is_valid():
+            record.resolution_status = form.cleaned_data['resolution_status']
+            record.resolution_note = form.cleaned_data['resolution_note']
+            record.resolved_by = request.user
+            record.resolved_at = timezone.now()
+            record.reconciled = True
+            record.save()
+            _log(request.user, 'update', record,
+                 f"resolved_as={record.resolution_status}, note={record.resolution_note}")
+            messages.success(request, 'Discrepancy marked as resolved.')
+            return redirect('reconciliation_list')
+    else:
+        form = ReconciliationResolveForm()
+
+    return render(request, 'inventory/reconciliation_resolve.html', {
+        'form': form,
+        'record': record,
+        'title': 'Resolve Discrepancy',
+    })
+
+
+@login_required
 def reconciliation_add(request):
     if not _has_role(request.user, 'admin', 'accountant'):
         messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
@@ -219,15 +254,55 @@ def reconciliation_add(request):
     if request.method == 'POST':
         form = RetailerSalesForm(request.POST)
         if form.is_valid():
-            record = form.save()
-            _log(request.user, 'create', record,
-                 f"branch={record.branch}, product={record.product}, sold={record.sold_quantity}, "
-                 f"delivery={record.internal_delivery_qty}, discrepancy={record.discrepancy}")
-            messages.success(request, 'Retailer sales data added.')
-            return redirect('reconciliation_list')
+            if request.POST.get('confirmed') == '1':
+                record = form.save()
+                _log(request.user, 'create', record,
+                     f"branch={record.branch}, product={record.product}, sold={record.sold_quantity}, "
+                     f"delivery={record.internal_delivery_qty}, discrepancy={record.discrepancy}")
+                messages.success(request, 'Retailer sales data added.')
+                return redirect('reconciliation_list')
+            else:
+                cd = form.cleaned_data
+                discrepancy = (cd['internal_delivery_qty'] - cd['sold_quantity']) if cd.get('internal_delivery_qty') else None
+                return render(request, 'inventory/reconciliation_confirm.html', {
+                    'form': form,
+                    'cd': cd,
+                    'discrepancy': discrepancy,
+                    'title': 'Confirm Sales Data',
+                })
     else:
         form = RetailerSalesForm()
     return render(request, 'inventory/reconciliation_form.html', {'form': form, 'title': 'Add Retailer Sales'})
+
+
+# ── Sales Summary ─────────────────────────────────────────────────────────────
+
+@login_required
+def sales_summary(request):
+    if not _has_role(request.user, 'admin', 'accountant'):
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+
+    by_product = (
+        RetailerSales.objects
+        .values('product__name', 'product__sku')
+        .annotate(total_sold=Sum('sold_quantity'))
+        .order_by('-total_sold')
+    )
+    by_branch = (
+        RetailerSales.objects
+        .values('branch__name')
+        .annotate(total_sold=Sum('sold_quantity'))
+        .order_by('-total_sold')
+    )
+    grand_total = by_product.aggregate(total=Sum('total_sold'))['total'] or 0
+
+    return render(request, 'inventory/sales_summary.html', {
+        'by_product': by_product,
+        'by_branch': by_branch,
+        'grand_total': grand_total,
+        'title': 'Sales Summary',
+    })
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
