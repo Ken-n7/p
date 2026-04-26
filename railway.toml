@@ -3,5 +3,5 @@ builder = "dockerfile"
 
 [deploy]
 startCommand = "sh -c 'gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2'"
-releaseCommand = "python manage.py migrate --noinput"
+releaseCommand = "python manage.py migrate --noinput && python manage.py createsuperuser --noinput || true"
 restartPolicyType = "on_failure"
