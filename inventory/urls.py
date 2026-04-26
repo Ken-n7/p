@@ -7,6 +7,7 @@ urlpatterns = [
     # Products
     path('products/', views.product_list, name='product_list'),
     path('products/add/', views.product_create, name='product_create'),
+    path('products/<int:pk>/', views.product_detail, name='product_detail'),
     path('products/<int:pk>/edit/', views.product_edit, name='product_edit'),
     path('products/<int:pk>/delete/', views.product_delete, name='product_delete'),
 
@@ -42,6 +43,9 @@ urlpatterns = [
     path('users/<int:pk>/edit/', views.user_edit, name='user_edit'),
     path('users/<int:pk>/deactivate/', views.user_deactivate, name='user_deactivate'),
     path('users/<int:pk>/delete/', views.user_delete, name='user_delete'),
+
+    # Profile
+    path('profile/', views.user_profile, name='user_profile'),
 
     # Auth
     path('login/', views.user_login, name='user_login'),

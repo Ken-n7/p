@@ -376,6 +376,9 @@
     </nav>
 
     <div class="sidebar-footer">
+        <a href="{% url 'user_profile' %}" class="sidebar-link {% if url_name == 'user_profile' %}active{% endif %}">
+            <i class="fas fa-user-circle nav-icon"></i> My Profile
+        </a>
         <a href="{% url 'user_logout' %}" class="sidebar-link" style="color:#f87171;">
             <i class="fas fa-sign-out-alt nav-icon"></i> Sign Out
         </a>
@@ -386,7 +389,7 @@
 <div class="main-wrapper">
     <header class="topbar">
         <span class="topbar-title">{{ title }}</span>
-        <div class="topbar-user">
+        <a href="{% url 'user_profile' %}" class="topbar-user" style="text-decoration:none;color:inherit;">
             <span>{{ request.user.get_full_name|default:request.user.username }}</span>
             {% if request.user.profile %}
                 <span class="role-pill">{{ request.user.profile.get_role_display }}</span>
@@ -394,7 +397,7 @@
                 <span class="role-pill superuser">Superuser</span>
             {% endif %}
             <div class="user-avatar">{{ request.user.username|first|upper }}</div>
-        </div>
+        </a>
     </header>
 
     <main class="page-content">

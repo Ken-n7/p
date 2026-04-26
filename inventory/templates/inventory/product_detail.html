@@ -1,0 +1,230 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{% url 'product_list' %}" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+            <i class="fas fa-arrow-left" style="font-size:0.72rem;margin-right:4px;"></i>Products
+        </a>
+        <h5 class="mb-0 mt-1">{{ product.name }}</h5>
+        <p class="text-muted small mb-0"><code>{{ product.sku }}</code> &mdash; {{ product.category }}</p>
+    </div>
+    {% if is_admin %}
+    <a href="{% url 'product_edit' product.pk %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-pen"></i> Edit Product
+    </a>
+    {% endif %}
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-cubes" style="color:#4f46e5;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Current Stock</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:{% if product.quantity < 10 %}#d97706{% else %}#0f172a{% endif %};line-height:1.1;">
+                        {{ product.quantity }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-industry" style="color:#16a34a;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Produced</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">
+                        {{ total_produced }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-truck" style="color:#1d4ed8;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Delivered</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">
+                        {{ total_delivered }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card">
+            <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div style="width:38px;height:38px;border-radius:9px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-trash-alt" style="color:#dc2626;font-size:0.85rem;"></i>
+                </div>
+                <div>
+                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Lost</div>
+                    <div style="font-size:1.4rem;font-weight:700;color:{% if total_lost > 0 %}#dc2626{% else %}#0f172a{% endif %};line-height:1.1;">
+                        {{ total_lost }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Info -->
+<div class="card mb-4">
+    <div class="card-header"><i class="fas fa-info-circle" style="color:#64748b;margin-right:6px;"></i>Product Details</div>
+    <div class="card-body p-0">
+        <table class="table mb-0" style="font-size:0.855rem;">
+            <tbody>
+                <tr>
+                    <th class="ps-3" style="width:30%;color:#64748b;font-weight:500;">Batch Number</th>
+                    <td class="pe-3">{{ product.batch_number|default:"—" }}</td>
+                    <th style="color:#64748b;font-weight:500;">Unit Price</th>
+                    <td class="pe-3">{% if product.unit_price %}₱{{ product.unit_price }}{% else %}—{% endif %}</td>
+                </tr>
+                <tr>
+                    <th class="ps-3" style="color:#64748b;font-weight:500;">Production Date</th>
+                    <td>{{ product.production_date|default:"—" }}</td>
+                    <th style="color:#64748b;font-weight:500;">Expiration Date</th>
+                    <td class="pe-3">
+                        {{ product.expiration_date|default:"—" }}
+                        {% if product.expiration_date %}
+                            {% if product.expiration_date <= today %}
+                                <span class="badge ms-1" style="background:#fee2e2;color:#dc2626;">Expired</span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Movements Table -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-exchange-alt" style="color:#4f46e5;margin-right:6px;font-size:0.8rem;"></i>Movement History</span>
+        <span class="badge" style="background:#f1f5f9;color:#64748b;font-weight:500;">{{ movements.count }}</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 dt-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th class="text-end">Qty</th>
+                    <th>Branch</th>
+                    <th>Reference</th>
+                    <th>Note</th>
+                    <th>By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movements %}
+                <tr>
+                    <td style="color:#64748b;white-space:nowrap;">{{ m.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        {% if m.movement_type == 'production_in' %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'delivery_out' %}
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'return_in' %}
+                            <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ m.get_movement_type_display }}</span>
+                        {% elif m.movement_type == 'loss' %}
+                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ m.get_movement_type_display }}</span>
+                        {% else %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end" style="font-weight:600;">{{ m.quantity }}</td>
+                    <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
+                    <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
+                    <td style="color:#94a3b8;font-size:0.8rem;">{{ m.note|default:"—"|truncatechars:40 }}</td>
+                    <td style="color:#94a3b8;font-size:0.8rem;">{{ m.created_by.username|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not movements %}
+        <div class="text-center py-5" style="color:#94a3b8;">
+            <i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            No movements recorded for this product.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if can_see_recon %}
+<!-- Reconciliation Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-balance-scale" style="color:#4f46e5;margin-right:6px;font-size:0.8rem;"></i>Reconciliation Records
+            <span style="font-size:0.75rem;font-weight:400;color:#64748b;margin-left:6px;">Total sold: <strong>{{ total_sold }} units</strong></span>
+        </span>
+        <span class="badge" style="background:#f1f5f9;color:#64748b;font-weight:500;">{{ sales.count }}</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 dt-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Branch</th>
+                    <th class="text-end">Sold</th>
+                    <th class="text-end">Delivered</th>
+                    <th class="text-end">Discrepancy</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in sales %}
+                <tr>
+                    <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
+                    <td style="font-weight:500;">{{ r.branch }}</td>
+                    <td class="text-end">{{ r.sold_quantity }}</td>
+                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}</td>
+                    <td class="text-end">
+                        {% if r.discrepancy and r.discrepancy < 0 %}
+                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ r.discrepancy }} over</span>
+                        {% elif r.discrepancy > 0 %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">+{{ r.discrepancy }} unsold</span>
+                        {% else %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not r.reconciled %}
+                            <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
+                        {% elif r.resolution_status == 'returned' %}
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">Returned</span>
+                        {% elif r.resolution_status == 'written_off' %}
+                            <span class="badge" style="background:#f1f5f9;color:#475569;">Written Off</span>
+                        {% elif r.resolution_status == 'corrected' %}
+                            <span class="badge" style="background:#f3e8ff;color:#7e22ce;">Corrected</span>
+                        {% else %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not sales %}
+        <div class="text-center py-5" style="color:#94a3b8;">
+            <i class="fas fa-balance-scale" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+            No reconciliation data for this product.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}
