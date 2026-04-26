@@ -64,7 +64,7 @@
 
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 dt-table">
             <thead>
                 <tr>
                     <th>Date</th>
@@ -72,8 +72,16 @@
                     <th>Product</th>
                     <th class="text-end">Sold (Retailer)</th>
                     <th class="text-end">Internal Delivery</th>
-                    <th class="text-end">Discrepancy</th>
+                    <th class="text-end">
+                        Discrepancy
+                        <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top"
+                              title="Delivered − Sold. Positive = unsold stock remaining at branch. Negative = sold more than delivered (counting error)."
+                              style="cursor:help;color:#94a3b8;font-size:0.78rem;">
+                            <i class="fas fa-circle-question"></i>
+                        </span>
+                    </th>
                     <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -86,24 +94,38 @@
                     <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}</td>
                     <td class="text-end">
                         {% if r.discrepancy and r.discrepancy < 0 %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ r.discrepancy }}</span>
+                            <span class="badge" style="background:#fee2e2;color:#dc2626;" title="Sold more than delivered — likely a counting error">{{ r.discrepancy }} over</span>
                         {% elif r.discrepancy > 0 %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">+{{ r.discrepancy }}</span>
+                            <span class="badge" style="background:#fef3c7;color:#92400e;" title="Unsold stock remaining at branch">+{{ r.discrepancy }} unsold</span>
                         {% else %}
                             <span class="badge" style="background:#dcfce7;color:#15803d;">0</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if r.reconciled %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
-                        {% else %}
+                        {% if not r.reconciled %}
                             <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
+                        {% elif r.resolution_status == 'returned' %}
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">Returned</span>
+                        {% elif r.resolution_status == 'written_off' %}
+                            <span class="badge" style="background:#f1f5f9;color:#475569;">Written Off</span>
+                        {% elif r.resolution_status == 'corrected' %}
+                            <span class="badge" style="background:#f3e8ff;color:#7e22ce;">Corrected</span>
+                        {% else %}
+                            <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not r.reconciled and r.discrepancy %}
+                            <a href="{% url 'reconciliation_resolve' r.pk %}"
+                               class="btn btn-outline-warning btn-sm" style="font-size:0.75rem;padding:2px 8px;">
+                                Resolve
+                            </a>
                         {% endif %}
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" class="text-center py-5" style="color:#94a3b8;">
+                    <td colspan="8" class="text-center py-5" style="color:#94a3b8;">
                         <i class="fas fa-balance-scale" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
                         No reconciliation data yet.
                     </td>
@@ -113,4 +135,12 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+});
+</script>
 {% endblock %}

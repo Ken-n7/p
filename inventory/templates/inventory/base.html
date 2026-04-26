@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
         body, body * { font-family: 'Inter', sans-serif; }
 
@@ -305,6 +306,19 @@
             .main-wrapper { margin-left: 0; }
         }
     </style>
+    <style>
+        .dataTables_wrapper { padding: 0; }
+        .dataTables_info,
+        .dataTables_paginate { padding: 10px 16px !important; font-size: 0.78rem; color: #64748b; }
+        .dataTables_paginate .page-link { font-size: 0.78rem; color: #4f46e5; }
+        .dataTables_paginate .page-item.active .page-link { background: #4f46e5 !important; border-color: #4f46e5 !important; color: #fff !important; }
+        .dataTables_length,
+        .dataTables_filter { padding: 10px 16px; font-size: 0.78rem; color: #64748b; }
+        .dataTables_length select { font-size: 0.78rem; border-color: #e2e8f0; border-radius: 6px; padding: 2px 6px; }
+        div.dataTables_wrapper div.dataTables_filter input {
+            font-size: 0.78rem; border: 1px solid #e2e8f0; border-radius: 6px; padding: 3px 8px; color: #0f172a;
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -341,6 +355,9 @@
         {% if request.user.is_superuser or request.user.profile.role == 'admin' or request.user.profile.role == 'accountant' %}
         <a href="{% url 'reconciliation_list' %}" class="sidebar-link {% if 'reconciliation' in url_name %}active{% endif %}">
             <i class="fas fa-balance-scale nav-icon"></i> Reconciliation
+        </a>
+        <a href="{% url 'sales_summary' %}" class="sidebar-link {% if url_name == 'sales_summary' %}active{% endif %}">
+            <i class="fas fa-chart-line nav-icon"></i> Sales Summary
         </a>
         {% endif %}
         <a href="{% url 'reports' %}" class="sidebar-link {% if url_name == 'reports' or 'export' in url_name %}active{% endif %}">
@@ -395,7 +412,26 @@
 </div>
 
 {% endwith %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+$(function () {
+    $('table.dt-table').DataTable({
+        searching: false,
+        lengthChange: false,
+        order: [],
+        pageLength: 25,
+        language: {
+            paginate: { previous: '‹', next: '›' },
+            info: 'Showing _START_–_END_ of _TOTAL_',
+            infoEmpty: 'No entries to show',
+            emptyTable: '—',
+        },
+    });
+});
+</script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

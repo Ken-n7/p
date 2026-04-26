@@ -193,6 +193,22 @@ class RetailerSalesForm(forms.ModelForm):
         return cleaned_data
 
 
+class ReconciliationResolveForm(forms.Form):
+    resolution_status = forms.ChoiceField(
+        choices=[
+            ('returned',    'Returned to Warehouse — goods were physically sent back'),
+            ('written_off', 'Written Off — expired or damaged at branch'),
+            ('corrected',   'Corrected Entry — counting or recording error'),
+        ],
+        label='Resolution Type',
+    )
+    resolution_note = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        label='Resolution Note',
+        help_text='Briefly describe how this discrepancy was resolved.',
+    )
+
+
 class BranchForm(forms.ModelForm):
     class Meta:
         model = Branch

@@ -1,0 +1,221 @@
+{% extends 'inventory/base.html' %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">Sales Summary</h5>
+        <p class="text-muted small mb-0">All-time retailer sales across SM & Savemore branches.</p>
+    </div>
+    <div style="font-size:0.82rem;color:#64748b;">
+        Grand total: <strong style="color:#0f172a;">{{ grand_total }} units sold</strong>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Horizontal bar — By Product -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-box" style="color:#4f46e5;margin-right:6px;"></i> Units Sold by Product
+            </div>
+            <div class="card-body" style="padding:16px 20px;">
+                {% if by_product %}
+                <canvas id="productChart"></canvas>
+                {% else %}
+                <div class="text-center py-5" style="color:#94a3b8;">
+                    <i class="fas fa-box-open" style="font-size:1.4rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                    No sales data yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Donut — By Branch -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-store" style="color:#4f46e5;margin-right:6px;"></i> Share by Branch
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="padding:16px 20px;">
+                {% if by_branch %}
+                <canvas id="branchChart" style="max-height:260px;"></canvas>
+                {% else %}
+                <div class="text-center py-5" style="color:#94a3b8;">
+                    <i class="fas fa-store-slash" style="font-size:1.4rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
+                    No sales data yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Product table -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th class="text-end">Total Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in by_product %}
+                        <tr>
+                            <td style="font-weight:500;">{{ row.product__name }}</td>
+                            <td style="color:#64748b;">{{ row.product__sku }}</td>
+                            <td class="text-end">
+                                <span style="font-weight:600;color:#0f172a;">{{ row.total_sold }}</span>
+                                <span style="color:#94a3b8;font-size:0.75rem;"> units</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4" style="color:#94a3b8;">No data.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Branch table -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th class="text-end">Total Sold</th>
+                            <th class="text-end">Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in by_branch %}
+                        <tr>
+                            <td style="font-weight:500;">{{ row.branch__name|default:"(unspecified)" }}</td>
+                            <td class="text-end">
+                                <span style="font-weight:600;color:#0f172a;">{{ row.total_sold }}</span>
+                                <span style="color:#94a3b8;font-size:0.75rem;"> units</span>
+                            </td>
+                            <td class="text-end" style="color:#64748b;">
+                                {% if grand_total %}
+                                    {% widthratio row.total_sold grand_total 100 %}%
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4" style="color:#94a3b8;">No data.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if by_product %}
+<script>
+const PALETTE = [
+    '#4f46e5','#0ea5e9','#10b981','#f59e0b','#ef4444',
+    '#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899',
+];
+
+// ── Horizontal bar — products ─────────────────────────
+const productLabels = [{% for row in by_product %}'{{ row.product__name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+const productData   = [{% for row in by_product %}{{ row.total_sold }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+new Chart(document.getElementById('productChart'), {
+    type: 'bar',
+    data: {
+        labels: productLabels,
+        datasets: [{
+            label: 'Units Sold',
+            data: productData,
+            backgroundColor: productLabels.map((_, i) => PALETTE[i % PALETTE.length] + 'cc'),
+            borderColor:     productLabels.map((_, i) => PALETTE[i % PALETTE.length]),
+            borderWidth: 1,
+            borderRadius: 4,
+        }],
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.parsed.x} units`,
+                },
+            },
+        },
+        scales: {
+            x: {
+                beginAtZero: true,
+                grid: { color: '#f1f5f9' },
+                ticks: { font: { size: 11 }, color: '#64748b' },
+            },
+            y: {
+                grid: { display: false },
+                ticks: { font: { size: 11 }, color: '#334155' },
+            },
+        },
+    },
+});
+
+// ── Donut — branches ──────────────────────────────────
+const branchLabels = [{% for row in by_branch %}'{{ row.branch__name|default:"Unspecified"|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+const branchData   = [{% for row in by_branch %}{{ row.total_sold }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+new Chart(document.getElementById('branchChart'), {
+    type: 'doughnut',
+    data: {
+        labels: branchLabels,
+        datasets: [{
+            data: branchData,
+            backgroundColor: branchLabels.map((_, i) => PALETTE[i % PALETTE.length] + 'cc'),
+            borderColor:     branchLabels.map((_, i) => PALETTE[i % PALETTE.length]),
+            borderWidth: 2,
+            hoverOffset: 8,
+        }],
+    },
+    options: {
+        responsive: true,
+        cutout: '62%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    font: { size: 11 },
+                    color: '#334155',
+                    padding: 12,
+                    boxWidth: 12,
+                    boxHeight: 12,
+                },
+            },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.label}: ${ctx.parsed} units`,
+                },
+            },
+        },
+    },
+});
+</script>
+{% endif %}
+{% endblock %}
