@@ -65,7 +65,7 @@
                     </div>
 
                     <div class="mb-3" id="field-delivery-qty">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Internal Delivery Qty</label>
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Quantity We Delivered</label>
                         <input type="number" id="id_internal_delivery_qty" name="internal_delivery_qty" value="{{ form.internal_delivery_qty.value|default:'' }}" class="form-control" style="font-size:0.855rem;" min="0">
                         {% if form.internal_delivery_qty.errors %}
                         <div class="text-danger" style="font-size:0.8rem;">{{ form.internal_delivery_qty.errors }}</div>
