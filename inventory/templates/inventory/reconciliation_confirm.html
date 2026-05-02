@@ -65,7 +65,12 @@
 
         <form method="post" action="{% url 'reconciliation_add' %}">
             {% csrf_token %}
-            {{ form.as_hidden }}
+            {{ form.delivery_movement.as_hidden }}
+            {{ form.product.as_hidden }}
+            {{ form.branch.as_hidden }}
+            {{ form.sold_quantity.as_hidden }}
+            {{ form.sales_date.as_hidden }}
+            {{ form.internal_delivery_qty.as_hidden }}
             <input type="hidden" name="confirmed" value="1">
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-success">
