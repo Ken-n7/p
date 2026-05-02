@@ -1,9 +1,9 @@
 from django import forms
-from django.db.models import Sum
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from .models import Product, InventoryMovement, RetailerSales, UserProfile, Branch
+
 
 class ProductForm(forms.ModelForm):
     class Meta:
@@ -18,173 +18,258 @@ class ProductForm(forms.ModelForm):
         return cleaned_data
 
 
-class InventoryMovementForm(forms.ModelForm):
-    confirm_override = forms.BooleanField(
-        required=False,
-        label="I acknowledge the warning above and confirm this entry is correct",
-    )
+class _MovementFormMixin:
+    def _can_override(self):
+        user = getattr(self, 'user', None)
+        if not user:
+            return False
+        if user.is_superuser:
+            return True
+        profile = getattr(user, 'profile', None)
+        return profile and profile.role in ('admin', 'accountant')
 
+    def _style(self):
+        for field in self.fields.values():
+            widget = field.widget
+            if not isinstance(widget, forms.CheckboxInput):
+                widget.attrs.setdefault('class', 'form-control')
+
+
+class ProductionInForm(_MovementFormMixin, forms.ModelForm):
     class Meta:
         model = InventoryMovement
-        fields = ['product', 'movement_type', 'quantity', 'source_batch', 'destination_branch',
-                 'reference_no', 'batch_number', 'production_date', 'expiration_date', 'note']
+        fields = ['product', 'quantity', 'batch_number', 'production_date', 'expiration_date', 'note']
         widgets = {
             'production_date': forms.DateInput(attrs={'type': 'date'}),
             'expiration_date': forms.DateInput(attrs={'type': 'date'}),
             'note': forms.Textarea(attrs={'rows': 3}),
         }
 
-    WAREHOUSE_TYPES = {'production_in', 'return_in', 'loss'}
-    SALES_TYPES     = {'delivery_out', 'back_order'}
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self._style()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        batch_number = cleaned_data.get('batch_number')
+        production_date = cleaned_data.get('production_date')
+        expiration_date = cleaned_data.get('expiration_date')
+        quantity = cleaned_data.get('quantity')
+
+        if not batch_number:
+            self.add_error('batch_number', 'Batch number is required.')
+        if not production_date:
+            self.add_error('production_date', 'Production date is required.')
+        if not expiration_date:
+            self.add_error('expiration_date', 'Expiration date is required.')
+        if production_date and expiration_date and expiration_date <= production_date:
+            self.add_error('expiration_date', 'Expiration date must be after the production date.')
+        if quantity is not None and quantity == 0:
+            self.add_error('quantity', 'Quantity must be greater than zero.')
+        return cleaned_data
+
+
+class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
+    source_batch = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='production_in').order_by('product__name', 'expiration_date'),
+        required=True,
+        empty_label='Select a batch',
+        label='Batch',
+    )
+    destination_branch = forms.ModelChoiceField(
+        queryset=Branch.objects.all(),
+        empty_label='Select a branch',
+        label='Branch',
+    )
+    closes_back_order = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='back_order', back_order_status='pending').order_by('product__name'),
+        required=False,
+        empty_label='— None (does not close a back order) —',
+        label='Closes Back Order',
+    )
+
+    class Meta:
+        model = InventoryMovement
+        fields = ['product', 'source_batch', 'destination_branch', 'quantity', 'reference_no', 'closes_back_order', 'note']
+        widgets = {
+            'note': forms.Textarea(attrs={'rows': 3}),
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        if not self._can_override():
-            del self.fields['confirm_override']
-        allowed = self._allowed_types()
-        if allowed is not None:
-            self.fields['movement_type'].choices = [
-                c for c in self.fields['movement_type'].choices if c[0] in allowed
-            ]
-        self.fields['batch_number'].required = False
-        self.fields['production_date'].required = False
-        self.fields['expiration_date'].required = False
-        self.fields['source_batch'].required = False
-        self.fields['source_batch'].queryset = InventoryMovement.objects.filter(
-            movement_type='production_in'
-        ).order_by('product__name', 'expiration_date')
-        self.fields['source_batch'].label = 'Batch'
-        self.fields['source_batch'].empty_label = 'Select a batch'
-
-    def _can_override(self):
-        if not self.user:
-            return False
-        if self.user.is_superuser:
-            return True
-        profile = getattr(self.user, 'profile', None)
-        return profile and profile.role in ('admin', 'accountant')
-
-    def _allowed_types(self):
-        if not self.user:
-            return None
-        if self.user.is_superuser:
-            return None
-        profile = getattr(self.user, 'profile', None)
-        if not profile:
-            return None
-        if profile.role == 'warehouse':
-            return self.WAREHOUSE_TYPES
-        if profile.role == 'sales':
-            return self.SALES_TYPES
-        return None
+        self._style()
 
     def clean(self):
         cleaned_data = super().clean()
-        quantity      = cleaned_data.get('quantity')
-        movement_type = cleaned_data.get('movement_type')
-        product       = cleaned_data.get('product')
-        branch        = cleaned_data.get('destination_branch')
-        reference_no  = cleaned_data.get('reference_no', '').strip()
-        can_override  = self._can_override()
-        confirmed     = cleaned_data.get('confirm_override', False)
-        source_batch  = cleaned_data.get('source_batch')
+        product = cleaned_data.get('product')
+        source_batch = cleaned_data.get('source_batch')
+        branch = cleaned_data.get('destination_branch')
+        quantity = cleaned_data.get('quantity')
+        ref = cleaned_data.get('reference_no', '').strip()
+        closes_bo = cleaned_data.get('closes_back_order')
 
-        allowed = self._allowed_types()
-        if allowed is not None and movement_type and movement_type not in allowed:
-            self.add_error('movement_type', "You are not permitted to record this movement type.")
-
+        if not branch:
+            self.add_error('destination_branch', 'A branch is required for delivery.')
+        if not ref:
+            self.add_error('reference_no', 'A reference number is required for deliveries.')
+        if not source_batch:
+            self.add_error('source_batch', 'A batch must be selected.')
         if quantity is not None and quantity == 0:
-            self.add_error('quantity', "Quantity must be greater than zero.")
-
-        BRANCH_REQUIRED = {'delivery_out', 'back_order', 'return_in'}
-        if movement_type in BRANCH_REQUIRED and not branch:
-            self.add_error('destination_branch', "A destination branch is required for this movement type.")
-
-        REF_REQUIRED = {'delivery_out', 'return_in'}
-        if movement_type in REF_REQUIRED and not reference_no:
-            self.add_error('reference_no', "A reference number is required for deliveries and returns.")
-
-        if movement_type == 'delivery_out' and product and quantity:
-            if source_batch:
-                pass
-            elif quantity > product.quantity:
-                self.add_error('quantity',
-                    f"Cannot deliver {quantity} {product.unit} — only {product.quantity} in stock.")
-
-        # Rule 5: loss cannot exceed current stock
-        if movement_type == 'loss' and product and quantity:
-            if source_batch:
-                pass
-            elif quantity > product.quantity:
-                self.add_error('quantity',
-                    f"Cannot record a loss of {quantity} {product.unit} — only {product.quantity} in stock.")
+            self.add_error('quantity', 'Quantity must be greater than zero.')
+        if source_batch and product and source_batch.product != product:
+            self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
+        if source_batch and quantity:
+            avail = source_batch.available_quantity()
+            if quantity > avail:
+                self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
+        if closes_bo and product and closes_bo.product != product:
+            self.add_error('closes_back_order', 'Selected back order is for a different product.')
+        if closes_bo and branch and closes_bo.destination_branch != branch:
+            self.add_error('closes_back_order', 'Selected back order is for a different branch.')
+        return cleaned_data
 
 
-        BATCH_REQUIRED = {'delivery_out', 'loss'}
-        if movement_type in BATCH_REQUIRED:
-            if not source_batch:
-                self.add_error('source_batch', 'A batch must be selected for this movement type.')
-            elif product and source_batch.product != product:
-                self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
-            elif quantity and source_batch:
-                avail = source_batch.available_quantity()
-                if quantity > avail:
-                    self.add_error('quantity',
-                        f"Cannot use {quantity} {product.unit} from this batch — only {avail} available.")
+class ReturnInForm(_MovementFormMixin, forms.ModelForm):
+    destination_branch = forms.ModelChoiceField(
+        queryset=Branch.objects.all(),
+        empty_label='Select a branch',
+        label='Branch',
+    )
+    source_delivery = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='delivery_out').order_by('-created_at'),
+        required=True,
+        empty_label='Select the original delivery',
+        label='Original Delivery',
+    )
 
-        if movement_type == 'return_in' and source_batch and product:
-            if source_batch.product != product:
-                self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
+    class Meta:
+        model = InventoryMovement
+        fields = ['product', 'destination_branch', 'source_delivery', 'quantity', 'reference_no', 'note']
+        widgets = {
+            'note': forms.Textarea(attrs={'rows': 3}),
+        }
 
-        # Rules 1 & 2: return_in sequence checks (only when branch is present)
-        if movement_type == 'return_in' and product and branch:
-            total_delivered = InventoryMovement.objects.filter(
-                product=product, movement_type='delivery_out', destination_branch=branch,
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self._style()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        branch = cleaned_data.get('destination_branch')
+        source_delivery = cleaned_data.get('source_delivery')
+        quantity = cleaned_data.get('quantity')
+        ref = cleaned_data.get('reference_no', '').strip()
+
+        if not branch:
+            self.add_error('destination_branch', 'A branch is required.')
+        if not ref:
+            self.add_error('reference_no', 'A reference number is required for returns.')
+        if not source_delivery:
+            self.add_error('source_delivery', 'The original delivery must be selected.')
+        if quantity is not None and quantity == 0:
+            self.add_error('quantity', 'Quantity must be greater than zero.')
+        if source_delivery and product and source_delivery.product != product:
+            self.add_error('source_delivery', 'Selected delivery is for a different product.')
+        if source_delivery and branch and source_delivery.destination_branch != branch:
+            self.add_error('source_delivery', 'Selected delivery did not go to this branch.')
+        if source_delivery and quantity:
+            from django.db.models import Sum
+            already_returned = InventoryMovement.objects.filter(
+                source_delivery=source_delivery,
+                movement_type='return_in',
             ).aggregate(total=Sum('quantity'))['total'] or 0
+            returnable = source_delivery.quantity - already_returned
+            if quantity > returnable:
+                self.add_error('quantity', f"Cannot return {quantity} — only {returnable} returnable from this delivery.")
+        return cleaned_data
 
-            if total_delivered == 0:
-                # Rule 1: no prior delivery to this branch for this product
-                msg = f"No delivery has been recorded for {product.name} at {branch}."
-                if can_override and not confirmed:
-                    self.add_error('confirm_override',
-                        f"Warning: {msg} Check the box below to proceed anyway.")
-                elif not can_override:
-                    self.add_error('destination_branch', msg)
-            elif quantity:
-                # Rule 2: return qty cannot exceed net delivered
-                total_returned = InventoryMovement.objects.filter(
-                    product=product, movement_type='return_in', destination_branch=branch,
-                ).aggregate(total=Sum('quantity'))['total'] or 0
-                net = total_delivered - total_returned
-                if quantity > net:
-                    self.add_error('quantity',
-                        f"Cannot return {quantity} units — net delivered to {branch} is {net} units.")
 
-        # Rule 3: back_order when stock is actually sufficient
-        if movement_type == 'back_order' and product and quantity:
-            if product.quantity >= quantity:
-                msg = (f"Current stock ({product.quantity} units) is sufficient to fulfill this order. "
-                       f"A back order may not be needed.")
-                if can_override and not confirmed:
-                    self.add_error('confirm_override',
-                        f"Warning: {msg} Check the box below to proceed anyway.")
-                elif not can_override:
-                    self.add_error('movement_type', msg)
+class LossForm(_MovementFormMixin, forms.ModelForm):
+    source_batch = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='production_in').order_by('product__name', 'expiration_date'),
+        required=True,
+        empty_label='Select a batch',
+        label='Batch',
+    )
+    source_delivery = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='delivery_out').order_by('-created_at'),
+        required=False,
+        empty_label='— Warehouse loss (no delivery) —',
+        label='Related Delivery (if transit or branch loss)',
+    )
 
-        if movement_type == 'production_in':
-            batch_number = cleaned_data.get('batch_number')
-            production_date = cleaned_data.get('production_date')
-            expiration_date = cleaned_data.get('expiration_date')
-            if not batch_number:
-                self.add_error('batch_number', "Batch number is required for production entries.")
-            if not production_date:
-                self.add_error('production_date', "Production date is required for production entries.")
-            if not expiration_date:
-                self.add_error('expiration_date', "Expiration date is required for production entries.")
-            if production_date and expiration_date and expiration_date <= production_date:
-                self.add_error('expiration_date', "Expiration date must be after the production date.")
+    class Meta:
+        model = InventoryMovement
+        fields = ['product', 'loss_location', 'source_batch', 'source_delivery', 'quantity', 'note']
+        widgets = {
+            'note': forms.Textarea(attrs={'rows': 3}),
+        }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self._style()
+        self.fields['loss_location'].required = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        product = cleaned_data.get('product')
+        source_batch = cleaned_data.get('source_batch')
+        source_delivery = cleaned_data.get('source_delivery')
+        loss_location = cleaned_data.get('loss_location')
+        quantity = cleaned_data.get('quantity')
+
+        if not loss_location:
+            self.add_error('loss_location', 'Loss location is required.')
+        if not source_batch:
+            self.add_error('source_batch', 'A batch must be selected.')
+        if quantity is not None and quantity == 0:
+            self.add_error('quantity', 'Quantity must be greater than zero.')
+        if source_batch and product and source_batch.product != product:
+            self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
+        if source_batch and quantity:
+            avail = source_batch.available_quantity()
+            if quantity > avail:
+                self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
+        if loss_location in ('transit', 'branch') and not source_delivery:
+            self.add_error('source_delivery', 'A related delivery is required for transit or branch losses.')
+        if source_delivery and product and source_delivery.product != product:
+            self.add_error('source_delivery', 'Selected delivery is for a different product.')
+        return cleaned_data
+
+
+class BackOrderForm(_MovementFormMixin, forms.ModelForm):
+    destination_branch = forms.ModelChoiceField(
+        queryset=Branch.objects.all(),
+        empty_label='Select a branch',
+        label='Branch',
+    )
+
+    class Meta:
+        model = InventoryMovement
+        fields = ['product', 'destination_branch', 'quantity', 'note']
+        widgets = {
+            'note': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        self._style()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        branch = cleaned_data.get('destination_branch')
+        quantity = cleaned_data.get('quantity')
+
+        if not branch:
+            self.add_error('destination_branch', 'A branch is required.')
+        if quantity is not None and quantity == 0:
+            self.add_error('quantity', 'Quantity must be greater than zero.')
         return cleaned_data
 
 
@@ -192,6 +277,8 @@ class RetailerSalesForm(forms.ModelForm):
     delivery_movement = forms.ModelChoiceField(
         queryset=InventoryMovement.objects.filter(
             movement_type='delivery_out'
+        ).exclude(
+            reconciliations__isnull=False
         ).select_related('product', 'destination_branch').order_by('-created_at'),
         required=False,
         empty_label='— Select a delivery to auto-fill (optional) —',
@@ -232,68 +319,40 @@ class RetailerSalesForm(forms.ModelForm):
 
         return cleaned_data
 
-
+# rest unchanged
 class ReconciliationResolveForm(forms.Form):
-    resolution_status = forms.ChoiceField(
-        choices=[
-            ('returned',    'Returned to Warehouse — goods were physically sent back'),
-            ('written_off', 'Written Off — expired or damaged at branch'),
-            ('corrected',   'Corrected Entry — counting or recording error'),
-        ],
-        label='Resolution Type',
-    )
-    resolution_note = forms.CharField(
-        widget=forms.Textarea(attrs={'rows': 3}),
-        label='Resolution Note',
-        help_text='Briefly describe how this discrepancy was resolved.',
-    )
-
+    resolution_status = forms.ChoiceField(choices=[('returned','Returned to Warehouse — goods were physically sent back'),('written_off','Written Off — expired or damaged at branch'),('corrected','Corrected Entry — counting or recording error')], label='Resolution Type')
+    resolution_note = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), label='Resolution Note', help_text='Briefly describe how this discrepancy was resolved.')
 
 class BranchForm(forms.ModelForm):
     class Meta:
         model = Branch
         fields = ['name', 'address']
-
-
 class UserCreateForm(UserCreationForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
-
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'role']
-
     def save(self, commit=True):
         user = super().save(commit=commit)
-        if commit:
-            UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
+        if commit: UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
         return user
-
-
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
-
-
+        for field in self.fields.values(): field.widget.attrs.setdefault('class', 'form-control')
 class UserEditForm(forms.ModelForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
-
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'role']
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and hasattr(self.instance, 'profile'):
-            self.fields['role'].initial = self.instance.profile.role
-
+        if self.instance and hasattr(self.instance, 'profile'): self.fields['role'].initial = self.instance.profile.role
     def save(self, commit=True):
         user = super().save(commit=commit)
-        if commit:
-            UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
+        if commit: UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
         return user
