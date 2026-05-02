@@ -294,7 +294,6 @@ class Command(BaseCommand):
                 expiration_date=exp_date,
                 note='Initial harvest batch — April 2025 cycle',
                 created_by=warehouse,
-                loss_location=loss_loc,
             )
             production_batches[sku] = mv
             _log(warehouse, 'create', mv, f"type=production_in, qty={qty}, product={prod}")
@@ -315,7 +314,6 @@ class Command(BaseCommand):
                 note=f'Weekly consignment delivery to {branch_name}',
                 source_batch=production_batches[sku],
                 created_by=sales,
-                back_order_status='pending',
             )
             _log(sales, 'create', mv,
                  f"type=delivery_out, qty={qty}, product={prod}, branch={branch_name}")
