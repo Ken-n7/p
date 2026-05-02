@@ -189,21 +189,36 @@ class InventoryMovementForm(forms.ModelForm):
 
 
 class RetailerSalesForm(forms.ModelForm):
+    delivery_movement = forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(
+            movement_type='delivery_out'
+        ).select_related('product', 'destination_branch').order_by('-created_at'),
+        required=False,
+        empty_label='— Select a delivery to auto-fill (optional) —',
+        label='Link to Delivery',
+    )
     branch = forms.ModelChoiceField(
         queryset=Branch.objects.all(),
-        empty_label="Select a branch",
+        empty_label='Select a branch',
     )
 
     class Meta:
         model = RetailerSales
-        fields = ['product', 'branch', 'sold_quantity', 'sales_date',
-                  'internal_delivery_qty']
+        fields = ['delivery_movement', 'product', 'branch', 'sold_quantity',
+                  'sales_date', 'internal_delivery_qty']
         widgets = {
             'sales_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def clean(self):
         cleaned_data = super().clean()
+        dm = cleaned_data.get('delivery_movement')
+
+        if dm:
+            cleaned_data['product'] = dm.product
+            cleaned_data['branch'] = dm.destination_branch
+            cleaned_data['internal_delivery_qty'] = dm.quantity
+
         sold = cleaned_data.get('sold_quantity')
         delivered = cleaned_data.get('internal_delivery_qty')
         sales_date = cleaned_data.get('sales_date')
@@ -213,7 +228,7 @@ class RetailerSalesForm(forms.ModelForm):
                 f"Sold quantity ({sold}) cannot exceed internal delivery quantity ({delivered})."
             )
         if sales_date and sales_date > timezone.now().date():
-            self.add_error('sales_date', "Sales date cannot be in the future.")
+            self.add_error('sales_date', 'Sales date cannot be in the future.')
 
         return cleaned_data
 

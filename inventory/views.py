@@ -305,6 +305,27 @@ def batches_for_product(request):
     return JsonResponse({'batches': result})
 
 
+@login_required
+def delivery_details(request):
+    movement_id = request.GET.get('movement_id')
+    if not movement_id:
+        return JsonResponse({})
+    try:
+        m = InventoryMovement.objects.select_related('product', 'destination_branch').get(
+            pk=movement_id, movement_type='delivery_out'
+        )
+    except InventoryMovement.DoesNotExist:
+        return JsonResponse({})
+    return JsonResponse({
+        'product_id': m.product_id,
+        'product_name': m.product.name,
+        'branch_id': m.destination_branch_id,
+        'branch_name': str(m.destination_branch) if m.destination_branch else '',
+        'qty': m.quantity,
+        'reference_no': m.reference_no or '',
+    })
+
+
 # ── Reconciliation ────────────────────────────────────────────────────────────
 
 @login_required

@@ -20,17 +20,28 @@
                             <th class="ps-3" style="color:#64748b;font-weight:500;">Product</th>
                             <td class="pe-3">{{ cd.product }}</td>
                         </tr>
+                        {% if cd.delivery_movement %}
+                        <tr>
+                            <th class="ps-3" style="color:#64748b;font-weight:500;">Linked Delivery</th>
+                            <td class="pe-3">
+                                <span class="badge" style="background:#dbeafe;color:#1d4ed8;">
+                                    <i class="fas fa-link" style="margin-right:4px;"></i>
+                                    {{ cd.delivery_movement.reference_no|default:"No ref" }} — {{ cd.delivery_movement.created_at|date:"M d, Y" }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endif %}
                         <tr>
                             <th class="ps-3" style="color:#64748b;font-weight:500;">Sales Date</th>
                             <td class="pe-3">{{ cd.sales_date|date:"M d, Y" }}</td>
                         </tr>
                         <tr>
                             <th class="ps-3" style="color:#64748b;font-weight:500;">Sold Quantity</th>
-                            <td class="pe-3">{{ cd.sold_quantity }} units</td>
+                            <td class="pe-3">{{ cd.sold_quantity }} {{ cd.product.unit }}</td>
                         </tr>
                         <tr>
                             <th class="ps-3" style="color:#64748b;font-weight:500;">Internal Delivery Qty</th>
-                            <td class="pe-3">{{ cd.internal_delivery_qty }} units</td>
+                            <td class="pe-3">{{ cd.internal_delivery_qty }} {{ cd.product.unit }}</td>
                         </tr>
                         <tr>
                             <th class="ps-3" style="color:#64748b;font-weight:500;">Discrepancy</th>
