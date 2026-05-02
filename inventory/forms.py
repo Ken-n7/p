@@ -8,7 +8,7 @@ from .models import Product, InventoryMovement, RetailerSales, UserProfile, Bran
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'sku', 'category', 'quantity', 'batch_number',
+        fields = ['name', 'sku', 'category', 'quantity', 'unit', 'batch_number',
                  'production_date', 'expiration_date', 'unit_price']
         widgets = {
             'production_date': forms.DateInput(attrs={'type': 'date'}),

@@ -126,7 +126,7 @@
     </div>
     <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#78350f;">
         {% for item in low_stock %}
-        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — {{ item.quantity }} units remaining</li>
+        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — {{ item.quantity }} {{ item.unit }} remaining</li>
         {% endfor %}
     </ul>
 </div>
@@ -207,7 +207,7 @@
                             <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
                         {% endif %}
                     </td>
-                    <td style="font-weight:600;">{{ m.quantity }}</td>
+                    <td style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ m.product.unit }}</span></td>
                     <td>
                         {{ m.destination_branch|default:"—" }}
                         {% if m.reference_no %}<span style="color:#94a3b8;font-size:0.78rem;">({{ m.reference_no }})</span>{% endif %}

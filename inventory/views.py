@@ -375,7 +375,7 @@ def sales_summary(request):
 
     by_product = (
         RetailerSales.objects
-        .values('product__name', 'product__sku')
+        .values('product__name', 'product__sku', 'product__unit')
         .annotate(total_sold=Sum('sold_quantity'))
         .order_by('-total_sold')
     )
@@ -406,7 +406,7 @@ def reports(request):
     product_losses = (
         InventoryMovement.objects
         .filter(movement_type='loss')
-        .values('product__name', 'product__sku')
+        .values('product__name', 'product__sku', 'product__unit')
         .annotate(total_lost=Sum('quantity'))
         .order_by('-total_lost')
     )

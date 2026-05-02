@@ -102,7 +102,7 @@
                             <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
                         {% endif %}
                     </td>
-                    <td style="font-weight:600;">{{ m.quantity }}</td>
+                    <td style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ m.product.unit }}</span></td>
                     <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
                     <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
                     <td style="color:#94a3b8;font-size:0.8rem;">{{ m.note|default:"—"|truncatechars:40 }}</td>

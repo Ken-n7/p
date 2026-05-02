@@ -27,7 +27,7 @@
                 <div>
                     <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Current Stock</div>
                     <div style="font-size:1.4rem;font-weight:700;color:{% if product.quantity < 10 %}#d97706{% else %}#0f172a{% endif %};line-height:1.1;">
-                        {{ product.quantity }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                        {{ product.quantity }} <span style="font-size:0.75rem;font-weight:400;">{{ product.unit }}</span>
                     </div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                 <div>
                     <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Produced</div>
                     <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">
-                        {{ total_produced }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                        {{ total_produced }} <span style="font-size:0.75rem;font-weight:400;">{{ product.unit }}</span>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                 <div>
                     <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Delivered</div>
                     <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">
-                        {{ total_delivered }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                        {{ total_delivered }} <span style="font-size:0.75rem;font-weight:400;">{{ product.unit }}</span>
                     </div>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                 <div>
                     <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Lost</div>
                     <div style="font-size:1.4rem;font-weight:700;color:{% if total_lost > 0 %}#dc2626{% else %}#0f172a{% endif %};line-height:1.1;">
-                        {{ total_lost }} <span style="font-size:0.75rem;font-weight:400;">units</span>
+                        {{ total_lost }} <span style="font-size:0.75rem;font-weight:400;">{{ product.unit }}</span>
                     </div>
                 </div>
             </div>
@@ -89,8 +89,14 @@
                 <tr>
                     <th class="ps-3" style="width:30%;color:#64748b;font-weight:500;">Batch Number</th>
                     <td class="pe-3">{{ product.batch_number|default:"—" }}</td>
-                    <th style="color:#64748b;font-weight:500;">Unit Price</th>
-                    <td class="pe-3">{% if product.unit_price %}₱{{ product.unit_price }}{% else %}—{% endif %}</td>
+                    <th style="color:#64748b;font-weight:500;">Unit</th>
+                    <td class="pe-3">{{ product.get_unit_display }}</td>
+                </tr>
+                <tr>
+                    <th class="ps-3" style="color:#64748b;font-weight:500;">Unit Price</th>
+                    <td class="pe-3">{% if product.unit_price %}₱{{ product.unit_price }} / {{ product.unit }}{% else %}—{% endif %}</td>
+                    <th style="color:#64748b;font-weight:500;"></th>
+                    <td></td>
                 </tr>
                 <tr>
                     <th class="ps-3" style="color:#64748b;font-weight:500;">Production Date</th>
@@ -146,7 +152,7 @@
                             <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
                         {% endif %}
                     </td>
-                    <td class="text-end" style="font-weight:600;">{{ m.quantity }}</td>
+                    <td class="text-end" style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ product.unit }}</span></td>
                     <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
                     <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
                     <td style="color:#94a3b8;font-size:0.8rem;">{{ m.note|default:"—"|truncatechars:40 }}</td>
@@ -190,8 +196,8 @@
                 <tr>
                     <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
                     <td style="font-weight:500;">{{ r.branch }}</td>
-                    <td class="text-end">{{ r.sold_quantity }}</td>
-                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}</td>
+                    <td class="text-end">{{ r.sold_quantity }} <span style="color:#94a3b8;font-size:0.78rem;">{{ product.unit }}</span></td>
+                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}{% if r.internal_delivery_qty %} <span style="color:#94a3b8;font-size:0.78rem;">{{ product.unit }}</span>{% endif %}</td>
                     <td class="text-end">
                         {% if r.discrepancy and r.discrepancy < 0 %}
                             <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ r.discrepancy }} over</span>

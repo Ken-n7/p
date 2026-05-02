@@ -26,20 +26,20 @@ BRANCH_DATA = [
     ('Savemore Apalit',       'Apalit, Pampanga'),
 ]
 
-# (name, sku, category, unit_price)
+# (name, sku, category, unit_price, unit)
 PRODUCTS_DATA = [
-    ('Kangkong',      'VEG-001', 'Leafy Vegetables', 28.00),
-    ('Pechay',        'VEG-002', 'Leafy Vegetables', 35.00),
-    ('Sitaw',         'VEG-003', 'Pod Vegetables',   52.00),
-    ('Ampalaya',      'VEG-004', 'Gourd Vegetables', 45.00),
-    ('Kamote Tops',   'VEG-005', 'Leafy Vegetables', 22.00),
-    ('Malunggay',     'VEG-006', 'Leafy Vegetables', 30.00),
-    ('Okra',          'VEG-007', 'Pod Vegetables',   58.00),
-    ('Talong',        'VEG-008', 'Fruit Vegetables', 42.00),
-    ('Kalabasa',      'VEG-009', 'Gourd Vegetables', 38.00),
-    ('Kamatis',       'VEG-010', 'Fruit Vegetables', 65.00),
-    ('Sibuyas Dahon', 'VEG-011', 'Leafy Vegetables', 48.00),
-    ('Labanos',       'VEG-012', 'Root Vegetables',  32.00),
+    ('Kangkong',      'VEG-001', 'Leafy Vegetables', 28.00, 'bundle'),
+    ('Pechay',        'VEG-002', 'Leafy Vegetables', 35.00, 'bundle'),
+    ('Sitaw',         'VEG-003', 'Pod Vegetables',   52.00, 'bundle'),
+    ('Ampalaya',      'VEG-004', 'Gourd Vegetables', 45.00, 'kg'),
+    ('Kamote Tops',   'VEG-005', 'Leafy Vegetables', 22.00, 'bundle'),
+    ('Malunggay',     'VEG-006', 'Leafy Vegetables', 30.00, 'bundle'),
+    ('Okra',          'VEG-007', 'Pod Vegetables',   58.00, 'kg'),
+    ('Talong',        'VEG-008', 'Fruit Vegetables', 42.00, 'pcs'),
+    ('Kalabasa',      'VEG-009', 'Gourd Vegetables', 38.00, 'pcs'),
+    ('Kamatis',       'VEG-010', 'Fruit Vegetables', 65.00, 'kg'),
+    ('Sibuyas Dahon', 'VEG-011', 'Leafy Vegetables', 48.00, 'bundle'),
+    ('Labanos',       'VEG-012', 'Root Vegetables',  32.00, 'pcs'),
 ]
 
 # (sku, production_qty, batch_number, reference_no)
@@ -266,7 +266,7 @@ class Command(BaseCommand):
         # ── Products ──────────────────────────────────────────────────
         self.stdout.write('Creating products...')
         products = {}
-        for name, sku, category, unit_price in PRODUCTS_DATA:
+        for name, sku, category, unit_price, unit in PRODUCTS_DATA:
             # Find matching batch info
             batch_no = next(b for s, _, b, _ in PRODUCTION_DATA if s == sku)
             prod = Product.objects.create(
@@ -274,6 +274,7 @@ class Command(BaseCommand):
                 sku=sku,
                 category=category,
                 quantity=0,
+                unit=unit,
                 batch_number=batch_no,
                 production_date=prod_date,
                 expiration_date=exp_date,

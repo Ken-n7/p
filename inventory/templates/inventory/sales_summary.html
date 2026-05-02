@@ -75,7 +75,7 @@
                             <td style="color:#64748b;">{{ row.product__sku }}</td>
                             <td class="text-end">
                                 <span style="font-weight:600;color:#0f172a;">{{ row.total_sold }}</span>
-                                <span style="color:#94a3b8;font-size:0.75rem;"> units</span>
+                                <span style="color:#94a3b8;font-size:0.75rem;"> {{ row.product__unit }}</span>
                             </td>
                         </tr>
                         {% empty %}
@@ -107,7 +107,7 @@
                             <td style="font-weight:500;">{{ row.branch__name|default:"(unspecified)" }}</td>
                             <td class="text-end">
                                 <span style="font-weight:600;color:#0f172a;">{{ row.total_sold }}</span>
-                                <span style="color:#94a3b8;font-size:0.75rem;"> units</span>
+                                <span style="color:#94a3b8;font-size:0.75rem;"> {{ row.product__unit }}</span>
                             </td>
                             <td class="text-end" style="color:#64748b;">
                                 {% if grand_total %}
