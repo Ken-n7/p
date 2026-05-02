@@ -112,6 +112,14 @@ class RetailerSales(models.Model):
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='sales')
+    delivery_movement = models.ForeignKey(
+        'InventoryMovement',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reconciliations',
+        limit_choices_to={'movement_type': 'delivery_out'},
+    )
     sold_quantity = models.PositiveIntegerField()
     sales_date = models.DateField()
     internal_delivery_qty = models.PositiveIntegerField(null=True, blank=True)
