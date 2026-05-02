@@ -235,8 +235,8 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
             avail = source_batch.available_quantity()
             if quantity > avail:
                 self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
-        if loss_location in ('transit', 'branch') and not source_delivery:
-            self.add_error('source_delivery', 'A related delivery is required for transit or branch losses.')
+        if loss_location == 'transit' and not source_delivery:
+            self.add_error('source_delivery', 'A related delivery is required for transit losses.')
         if source_delivery and product and source_delivery.product != product:
             self.add_error('source_delivery', 'Selected delivery is for a different product.')
         return cleaned_data
@@ -321,8 +321,29 @@ class RetailerSalesForm(forms.ModelForm):
 
 # rest unchanged
 class ReconciliationResolveForm(forms.Form):
-    resolution_status = forms.ChoiceField(choices=[('returned','Returned to Warehouse — goods were physically sent back'),('written_off','Written Off — expired or damaged at branch'),('corrected','Corrected Entry — counting or recording error')], label='Resolution Type')
-    resolution_note = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}), label='Resolution Note', help_text='Briefly describe how this discrepancy was resolved.')
+    POSITIVE_CHOICES = [
+        ('returned',    'Returned to Warehouse — goods were physically sent back'),
+        ('written_off', 'Written Off — expired or damaged at branch'),
+        ('corrected',   'Corrected Entry — counting or recording error'),
+    ]
+    NEGATIVE_CHOICES = [
+        ('over_sold',  'Sales Exceeded Delivery — branch sold more than EFP delivered'),
+        ('corrected',  'Corrected Entry — counting or recording error'),
+    ]
+
+    resolution_status = forms.ChoiceField(choices=POSITIVE_CHOICES, label='Resolution Type')
+    resolution_note = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3}),
+        label='Resolution Note',
+        help_text='Briefly describe how this discrepancy was resolved.',
+    )
+
+    def __init__(self, *args, discrepancy=0, **kwargs):
+        super().__init__(*args, **kwargs)
+        if discrepancy < 0:
+            self.fields['resolution_status'].choices = self.NEGATIVE_CHOICES
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
 
 class BranchForm(forms.ModelForm):
     class Meta:
