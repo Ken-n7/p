@@ -53,7 +53,7 @@ class InventoryMovement(models.Model):
     OUTBOUND_TYPES = {'delivery_out', 'loss'}
     # back_order is recorded but does not affect current stock level
 
-    LOSS_LOCATION_CHOICES = [('warehouse', 'Warehouse'), ('transit', 'In Transit'), ('branch', 'At Branch')]
+    LOSS_LOCATION_CHOICES = [('warehouse', 'Warehouse'), ('transit', 'In Transit')]
     BACK_ORDER_STATUS_CHOICES = [('pending', 'Pending'), ('fulfilled', 'Fulfilled'), ('cancelled', 'Cancelled')]
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -115,6 +115,7 @@ class RetailerSales(models.Model):
         ('returned',     'Returned to Warehouse'),
         ('written_off',  'Written Off'),
         ('corrected',    'Corrected Entry'),
+        ('over_sold',    'Sales Exceeded Delivery'),
     ]
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

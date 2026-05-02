@@ -17,18 +17,16 @@ from .forms import (
 
 _TYPE_ROLES = {
     'production_in': ('admin', 'warehouse'),
-    'delivery_out': ('admin', 'sales'),
-    'return_in': ('admin', 'warehouse'),
-    'loss': ('admin', 'warehouse'),
-    'back_order': ('admin', 'sales'),
+    'delivery_out':  ('admin', 'sales'),
+    'loss':          ('admin', 'warehouse'),
+    'back_order':    ('admin', 'sales'),
 }
 
 _MOVEMENT_FORMS = {
     'production_in': ProductionInForm,
-    'delivery_out': DeliveryOutForm,
-    'return_in': ReturnInForm,
-    'loss': LossForm,
-    'back_order': BackOrderForm,
+    'delivery_out':  DeliveryOutForm,
+    'loss':          LossForm,
+    'back_order':    BackOrderForm,
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -455,7 +453,7 @@ def reconciliation_resolve(request, pk):
         return redirect('reconciliation_list')
 
     if request.method == 'POST':
-        form = ReconciliationResolveForm(request.POST)
+        form = ReconciliationResolveForm(request.POST, discrepancy=record.discrepancy or 0)
         if form.is_valid():
             record.resolution_status = form.cleaned_data['resolution_status']
             record.resolution_note = form.cleaned_data['resolution_note']
@@ -486,34 +484,19 @@ def reconciliation_resolve(request, pk):
                 _log(request.user, 'create', mv,
                      f"type=return_in, qty={discrepancy}, product={record.product}, auto from recon #{record.pk}")
 
-            elif status == 'written_off' and discrepancy > 0:
-                mv = InventoryMovement.objects.create(
-                    product=record.product,
-                    movement_type='loss',
-                    quantity=discrepancy,
-                    destination_branch=record.branch,
-                    note=(
-                        f"Auto-created on reconciliation resolve — "
-                        f"{discrepancy} {record.product.unit} written off at {record.branch}"
-                    ),
-                    source_batch=source_batch,
-                    created_by=request.user,
-                )
-                _log(request.user, 'create', mv,
-                     f"type=loss, qty={discrepancy}, product={record.product}, auto from recon #{record.pk}")
-
-            # corrected: no stock movement
+            # written_off, corrected, over_sold: no stock movement
             record.save()
             _log(request.user, 'update', record,
                  f"resolved_as={record.resolution_status}, note={record.resolution_note}")
             messages.success(request, 'Discrepancy marked as resolved.')
             return redirect('reconciliation_list')
     else:
-        form = ReconciliationResolveForm()
+        form = ReconciliationResolveForm(discrepancy=record.discrepancy or 0)
 
     return render(request, 'inventory/reconciliation_resolve.html', {
         'form': form,
         'record': record,
+        'discrepancy': record.discrepancy or 0,
         'title': 'Resolve Discrepancy',
     })
 
