@@ -388,6 +388,47 @@ def reconciliation_resolve(request, pk):
             record.resolved_by = request.user
             record.resolved_at = timezone.now()
             record.reconciled = True
+
+            status = form.cleaned_data['resolution_status']
+            discrepancy = record.discrepancy or 0
+            source_batch = (
+                record.delivery_movement.source_batch
+                if record.delivery_movement else None
+            )
+
+            if status == 'returned' and discrepancy > 0:
+                mv = InventoryMovement.objects.create(
+                    product=record.product,
+                    movement_type='return_in',
+                    quantity=discrepancy,
+                    destination_branch=record.branch,
+                    note=(
+                        f"Auto-created on reconciliation resolve — "
+                        f"{discrepancy} {record.product.unit} returned from {record.branch}"
+                    ),
+                    source_batch=source_batch,
+                    created_by=request.user,
+                )
+                _log(request.user, 'create', mv,
+                     f"type=return_in, qty={discrepancy}, product={record.product}, auto from recon #{record.pk}")
+
+            elif status == 'written_off' and discrepancy > 0:
+                mv = InventoryMovement.objects.create(
+                    product=record.product,
+                    movement_type='loss',
+                    quantity=discrepancy,
+                    destination_branch=record.branch,
+                    note=(
+                        f"Auto-created on reconciliation resolve — "
+                        f"{discrepancy} {record.product.unit} written off at {record.branch}"
+                    ),
+                    source_batch=source_batch,
+                    created_by=request.user,
+                )
+                _log(request.user, 'create', mv,
+                     f"type=loss, qty={discrepancy}, product={record.product}, auto from recon #{record.pk}")
+
+            # corrected: no stock movement
             record.save()
             _log(request.user, 'update', record,
                  f"resolved_as={record.resolution_status}, note={record.resolution_note}")
