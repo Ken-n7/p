@@ -53,6 +53,9 @@ class InventoryMovement(models.Model):
     OUTBOUND_TYPES = {'delivery_out', 'loss'}
     # back_order is recorded but does not affect current stock level
 
+    LOSS_LOCATION_CHOICES = [('warehouse', 'Warehouse'), ('transit', 'In Transit'), ('branch', 'At Branch')]
+    BACK_ORDER_STATUS_CHOICES = [('pending', 'Pending'), ('fulfilled', 'Fulfilled'), ('cancelled', 'Cancelled')]
+
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPES)
     quantity = models.PositiveIntegerField()
@@ -70,6 +73,10 @@ class InventoryMovement(models.Model):
         related_name='deductions',
         limit_choices_to={'movement_type': 'production_in'},
     )
+    loss_location = models.CharField(max_length=10, choices=LOSS_LOCATION_CHOICES, null=True, blank=True)
+    source_delivery = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='linked_movements', limit_choices_to={'movement_type': 'delivery_out'})
+    closes_back_order = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='fulfillment', limit_choices_to={'movement_type': 'back_order'})
+    back_order_status = models.CharField(max_length=10, choices=BACK_ORDER_STATUS_CHOICES, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 

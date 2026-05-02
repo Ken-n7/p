@@ -79,6 +79,7 @@
                     <th>Type</th>
                     <th>Qty</th>
                     <th>Batch</th>
+                    <th>Loss Location</th>
                     <th>Branch / Destination</th>
                     <th>Reference</th>
                     <th>Note</th>
@@ -105,6 +106,7 @@
                     </td>
                     <td style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ m.product.unit }}</span></td>
                     <td style="color:#64748b;">{{ m.source_batch.batch_number|default:"—" }}</td>
+                    <td style="color:#64748b;">{% if m.movement_type == 'loss' and m.loss_location %}{{ m.get_loss_location_display }}{% else %}—{% endif %}</td>
                     <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
                     <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
                     <td style="color:#94a3b8;font-size:0.8rem;">{{ m.note|default:"—"|truncatechars:40 }}</td>
