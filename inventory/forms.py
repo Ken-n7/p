@@ -26,7 +26,7 @@ class InventoryMovementForm(forms.ModelForm):
 
     class Meta:
         model = InventoryMovement
-        fields = ['product', 'movement_type', 'quantity', 'destination_branch',
+        fields = ['product', 'movement_type', 'quantity', 'source_batch', 'destination_branch',
                  'reference_no', 'batch_number', 'production_date', 'expiration_date', 'note']
         widgets = {
             'production_date': forms.DateInput(attrs={'type': 'date'}),
@@ -50,6 +50,12 @@ class InventoryMovementForm(forms.ModelForm):
         self.fields['batch_number'].required = False
         self.fields['production_date'].required = False
         self.fields['expiration_date'].required = False
+        self.fields['source_batch'].required = False
+        self.fields['source_batch'].queryset = InventoryMovement.objects.filter(
+            movement_type='production_in'
+        ).order_by('product__name', 'expiration_date')
+        self.fields['source_batch'].label = 'Batch'
+        self.fields['source_batch'].empty_label = 'Select a batch'
 
     def _can_override(self):
         if not self.user:
@@ -82,6 +88,7 @@ class InventoryMovementForm(forms.ModelForm):
         reference_no  = cleaned_data.get('reference_no', '').strip()
         can_override  = self._can_override()
         confirmed     = cleaned_data.get('confirm_override', False)
+        source_batch  = cleaned_data.get('source_batch')
 
         allowed = self._allowed_types()
         if allowed is not None and movement_type and movement_type not in allowed:
@@ -99,15 +106,36 @@ class InventoryMovementForm(forms.ModelForm):
             self.add_error('reference_no', "A reference number is required for deliveries and returns.")
 
         if movement_type == 'delivery_out' and product and quantity:
-            if quantity > product.quantity:
+            if source_batch:
+                pass
+            elif quantity > product.quantity:
                 self.add_error('quantity',
-                    f"Cannot deliver {quantity} units — only {product.quantity} in stock.")
+                    f"Cannot deliver {quantity} {product.unit} — only {product.quantity} in stock.")
 
         # Rule 5: loss cannot exceed current stock
         if movement_type == 'loss' and product and quantity:
-            if quantity > product.quantity:
+            if source_batch:
+                pass
+            elif quantity > product.quantity:
                 self.add_error('quantity',
-                    f"Cannot record a loss of {quantity} units — only {product.quantity} in stock.")
+                    f"Cannot record a loss of {quantity} {product.unit} — only {product.quantity} in stock.")
+
+
+        BATCH_REQUIRED = {'delivery_out', 'loss'}
+        if movement_type in BATCH_REQUIRED:
+            if not source_batch:
+                self.add_error('source_batch', 'A batch must be selected for this movement type.')
+            elif product and source_batch.product != product:
+                self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
+            elif quantity and source_batch:
+                avail = source_batch.available_quantity()
+                if quantity > avail:
+                    self.add_error('quantity',
+                        f"Cannot use {quantity} {product.unit} from this batch — only {avail} available.")
+
+        if movement_type == 'return_in' and source_batch and product:
+            if source_batch.product != product:
+                self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
 
         # Rules 1 & 2: return_in sequence checks (only when branch is present)
         if movement_type == 'return_in' and product and branch:

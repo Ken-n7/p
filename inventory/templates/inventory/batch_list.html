@@ -11,7 +11,7 @@
     <div class="card-body p-0">
         <table class="table table-hover mb-0 dt-table">
             <thead>
-                <tr><th>Date Recorded</th><th>Product</th><th>SKU</th><th>Batch No.</th><th>Quantity</th><th>Production Date</th><th>Expiration Date</th><th>Status</th></tr>
+                <tr><th>Date Recorded</th><th>Product</th><th>SKU</th><th>Batch No.</th><th>Available / Produced</th><th>Production Date</th><th>Expiration Date</th><th>Status</th></tr>
             </thead>
             <tbody>
                 {% for b in batches %}
@@ -20,7 +20,7 @@
                     <td><a href="{% url 'product_detail' b.product.pk %}">{{ b.product.name }}</a></td>
                     <td><code>{{ b.product.sku }}</code></td>
                     <td>{{ b.batch_number|default:"—" }}</td>
-                    <td>{{ b.quantity }} {{ b.product.unit }}</td>
+                    <td><strong>{{ b.available_quantity }}</strong> / {{ b.quantity }} {{ b.product.unit }}</td>
                     <td>{{ b.production_date|default:"—" }}</td>
                     <td>{{ b.expiration_date|default:"—" }}</td>
                     <td>
