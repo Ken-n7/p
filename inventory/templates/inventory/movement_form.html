@@ -70,6 +70,22 @@
                     <div class="mb-3"><label class="form-label">{{ form.source_batch.label }}</label>{{ form.source_batch }}{% if form.source_batch.errors %}<div class="text-danger">{{ form.source_batch.errors }}</div>{% endif %}</div>
                     <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
                     <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+
+                    {% elif movement_type == 'production_in' %}
+                    <div class="mb-3"><label class="form-label">{{ form.product.label }}</label>{{ form.product }}{% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.batch_number.label }}</label>{{ form.batch_number }}{% if form.batch_number.errors %}<div class="text-danger">{{ form.batch_number.errors }}</div>{% endif %}</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3"><label class="form-label">{{ form.production_date.label }}</label>{{ form.production_date }}{% if form.production_date.errors %}<div class="text-danger">{{ form.production_date.errors }}</div>{% endif %}</div>
+                        <div class="col-md-6 mb-3"><label class="form-label">{{ form.expiration_date.label }}</label>{{ form.expiration_date }}{% if form.expiration_date.errors %}<div class="text-danger">{{ form.expiration_date.errors }}</div>{% endif %}</div>
+                    </div>
+                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+
+                    {% elif movement_type == 'back_order' %}
+                    <div class="mb-3"><label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}{% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.product.label }}</label>{{ form.product }}{% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
                     {% else %}
                     {{ form.as_p }}
                     {% endif %}
@@ -88,6 +104,40 @@
 (function(){
     const movementType = '{{ movement_type }}';
 
+    function refreshBatches(productId) {
+        const batchSelect = document.getElementById('id_source_batch');
+        if (!batchSelect) return;
+
+        batchSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = 'Select a batch';
+        batchSelect.appendChild(placeholder);
+
+        if (!productId) return;
+
+        fetch(`/api/batches-for-product/?product_id=${productId}`)
+            .then(r => r.json())
+            .then(data => {
+                const batches = data.batches || [];
+                if (!batches.length) {
+                    const noBatches = document.createElement('option');
+                    noBatches.value = '';
+                    noBatches.textContent = 'No available batches for this product';
+                    noBatches.disabled = true;
+                    batchSelect.appendChild(noBatches);
+                    return;
+                }
+
+                batches.forEach(b => {
+                    const option = document.createElement('option');
+                    option.value = b.id;
+                    option.textContent = b.label;
+                    batchSelect.appendChild(option);
+                });
+            });
+    }
+
     function applyLinkedLock(selectEl, hiddenEl, value, lock) {
         if (!selectEl || !hiddenEl) return;
         selectEl.disabled = lock;
@@ -105,6 +155,10 @@
         const badge = document.getElementById('back-order-link-badge');
         const clearBtn = document.getElementById('clear-back-order');
 
+        product.addEventListener('change', function() {
+            refreshBatches(this.value);
+        });
+
         backOrder.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
             if (!this.value) {
@@ -116,6 +170,7 @@
             const productId = selected.dataset.productId || '';
             const branchId = selected.dataset.branchId || '';
             product.value = productId;
+            product.dispatchEvent(new Event('change'));
             branch.value = branchId;
             applyLinkedLock(product, hiddenProduct, productId, true);
             applyLinkedLock(branch, hiddenBranch, branchId, true);
@@ -125,6 +180,7 @@
         clearBtn.addEventListener('click', function(){
             backOrder.value = '';
             product.value = '';
+            product.dispatchEvent(new Event('change'));
             branch.value = '';
             applyLinkedLock(product, hiddenProduct, '', false);
             applyLinkedLock(branch, hiddenBranch, '', false);
@@ -143,12 +199,17 @@
         const badge = document.getElementById('loss-delivery-link-badge');
         const clearBtn = document.getElementById('clear-loss-delivery');
 
+        product.addEventListener('change', function() {
+            refreshBatches(this.value);
+        });
+
         function updateDeliveryVisibility(){
             const show = location.value === 'transit';
             sourceDeliveryWrap.style.display = show ? '' : 'none';
             if (!show) {
                 delivery.value = '';
                 product.value = '';
+                product.dispatchEvent(new Event('change'));
                 applyLinkedLock(product, hiddenProduct, '', false);
                 badge.style.display = 'none';
             }
@@ -159,6 +220,7 @@
             const id = this.value;
             if (!id) {
                 product.value = '';
+                product.dispatchEvent(new Event('change'));
                 applyLinkedLock(product, hiddenProduct, '', false);
                 badge.style.display = 'none';
                 return;
@@ -168,6 +230,7 @@
                 .then(data => {
                     const productId = data.product_id || '';
                     product.value = productId;
+                    product.dispatchEvent(new Event('change'));
                     applyLinkedLock(product, hiddenProduct, productId, true);
                     badge.style.display = 'block';
                 });
@@ -176,6 +239,7 @@
         clearBtn.addEventListener('click', function(){
             delivery.value = '';
             product.value = '';
+            refreshBatches('');
             applyLinkedLock(product, hiddenProduct, '', false);
             badge.style.display = 'none';
         });

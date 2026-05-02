@@ -502,7 +502,10 @@ def reconciliation_resolve(request, pk):
             record.save()
             _log(request.user, 'update', record,
                  f"resolved_as={record.resolution_status}, note={record.resolution_note}")
-            messages.success(request, 'Discrepancy marked as resolved.')
+            if status == 'returned' and discrepancy > 0:
+                messages.success(request, f'Resolved — {discrepancy} {record.product.unit} returned to stock as a Return In movement.')
+            else:
+                messages.success(request, f'Discrepancy marked as resolved ({record.get_resolution_status_display()}).')
             return redirect('reconciliation_list')
     else:
         form = ReconciliationResolveForm(discrepancy=record.discrepancy or 0)
