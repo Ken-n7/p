@@ -14,6 +14,7 @@ urlpatterns = [
     # Movements
     path('movements/', views.movement_list, name='movement_list'),
     path('movements/add/', views.movement_create, name='movement_create'),
+    path('batches/', views.batch_list, name='batch_list'),
 
     # Reconciliation
     path('reconciliation/', views.reconciliation_list, name='reconciliation_list'),
