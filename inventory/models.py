@@ -17,9 +17,6 @@ class Product(models.Model):
     category = models.CharField(max_length=100, default="Fresh Produce")
     quantity = models.PositiveIntegerField(default=0)
     unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='pcs')
-    batch_number = models.CharField(max_length=50, blank=True)
-    production_date = models.DateField(null=True, blank=True)
-    expiration_date = models.DateField(null=True, blank=True)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -62,6 +59,9 @@ class InventoryMovement(models.Model):
     destination_branch = models.ForeignKey('Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='movements')
     reference_no = models.CharField(max_length=100, blank=True)
     note = models.TextField(blank=True)
+    batch_number = models.CharField(max_length=50, blank=True)
+    production_date = models.DateField(null=True, blank=True)
+    expiration_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 

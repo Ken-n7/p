@@ -140,7 +140,7 @@
     </div>
     <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#7f1d1d;">
         {% for item in near_expiry %}
-        <li><strong>{{ item.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires {{ item.expiration_date }}</li>
+        <li><strong>{{ item.product.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires {{ item.expiration_date }}</li>
         {% endfor %}
     </ul>
 </div>

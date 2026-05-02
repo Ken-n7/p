@@ -9,9 +9,9 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'sku', 'quantity', 'batch_number', 'expiration_date']
+    list_display = ['name', 'sku', 'quantity', 'unit_price', 'created_at']
     search_fields = ['name', 'sku']
-    list_filter = ['category', 'expiration_date']
+    list_filter = ['category', 'unit']
 
 
 @admin.register(InventoryMovement)
