@@ -62,6 +62,14 @@ class InventoryMovement(models.Model):
     batch_number = models.CharField(max_length=50, blank=True)
     production_date = models.DateField(null=True, blank=True)
     expiration_date = models.DateField(null=True, blank=True)
+    source_batch = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='deductions',
+        limit_choices_to={'movement_type': 'production_in'},
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -75,6 +83,18 @@ class InventoryMovement(models.Model):
                 product.quantity = max(0, product.quantity - self.quantity)
             product.save(update_fields=['quantity'])
         super().save(*args, **kwargs)
+
+    def available_quantity(self):
+        if self.movement_type != 'production_in':
+            return None
+        from django.db.models import Sum
+        deducted = self.deductions.filter(
+            movement_type__in=['delivery_out', 'loss']
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+        returned = self.deductions.filter(
+            movement_type='return_in'
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+        return self.quantity - deducted + returned
 
     def __str__(self):
         return f"{self.get_movement_type_display()} - {self.product.name} ({self.quantity})"

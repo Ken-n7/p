@@ -281,6 +281,7 @@ class Command(BaseCommand):
 
         # ── Production In ─────────────────────────────────────────────
         self.stdout.write('Recording production batches...')
+        production_batches = {}
         for sku, qty, batch_no, ref in PRODUCTION_DATA:
             prod = products[sku]
             mv = InventoryMovement.objects.create(
@@ -294,6 +295,7 @@ class Command(BaseCommand):
                 note='Initial harvest batch — April 2025 cycle',
                 created_by=warehouse,
             )
+            production_batches[sku] = mv
             _log(warehouse, 'create', mv, f"type=production_in, qty={qty}, product={prod}")
 
         # ── Delivery Out ──────────────────────────────────────────────
@@ -309,6 +311,7 @@ class Command(BaseCommand):
                 destination_branch=branch,
                 reference_no=ref,
                 note=f'Weekly consignment delivery to {branch_name}',
+                source_batch=production_batches[sku],
                 created_by=sales,
             )
             _log(sales, 'create', mv,
@@ -325,6 +328,7 @@ class Command(BaseCommand):
                 movement_type='loss',
                 quantity=qty,
                 note=note,
+                source_batch=production_batches[sku],
                 created_by=warehouse,
             )
             _log(warehouse, 'create', mv, f"type=loss, qty={qty}, product={prod}")
@@ -341,6 +345,7 @@ class Command(BaseCommand):
                 destination_branch=branch,
                 reference_no=ref,
                 note=note,
+                source_batch=production_batches[sku],
                 created_by=warehouse,
             )
             _log(warehouse, 'create', mv,

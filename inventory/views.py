@@ -1,6 +1,6 @@
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -281,6 +281,28 @@ def batch_list(request):
         'seven_days': timezone.now().date() + timezone.timedelta(days=7),
         'title': 'Batches',
     })
+
+
+
+@login_required
+def batches_for_product(request):
+    product_id = request.GET.get('product_id')
+    if not product_id:
+        return JsonResponse({'batches': []})
+    batches = InventoryMovement.objects.filter(
+        product_id=product_id,
+        movement_type='production_in',
+    ).order_by('expiration_date')
+    result = []
+    for b in batches:
+        avail = b.available_quantity()
+        if avail > 0:
+            result.append({
+                'id': b.pk,
+                'label': f"{b.batch_number} — exp {b.expiration_date} ({avail} {b.product.unit} available)",
+                'available': avail,
+            })
+    return JsonResponse({'batches': result})
 
 
 # ── Reconciliation ────────────────────────────────────────────────────────────
