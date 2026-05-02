@@ -52,12 +52,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const branchSelect  = document.getElementById('id_destination_branch');
     const refWrapper    = document.getElementById('div_id_reference_no');
     const refInput      = document.getElementById('id_reference_no');
+    const batchWrapper  = document.getElementById('div_id_batch_number');
+    const batchInput    = document.getElementById('id_batch_number');
+    const prodWrapper   = document.getElementById('div_id_production_date');
+    const prodInput     = document.getElementById('id_production_date');
+    const expWrapper    = document.getElementById('div_id_expiration_date');
+    const expInput      = document.getElementById('id_expiration_date');
 
     const NEEDS_BRANCH = new Set(['delivery_out', 'back_order', 'return_in']);
     const NEEDS_REF    = new Set(['delivery_out', 'return_in']);
+    const NEEDS_BATCH   = new Set(['production_in']);
     const TRANSITION   = 'max-height 0.3s ease, opacity 0.25s ease';
 
-    [branchWrapper, refWrapper].forEach(w => {
+    [branchWrapper, refWrapper, batchWrapper, prodWrapper, expWrapper].forEach(w => {
         w.style.overflow   = 'hidden';
         w.style.transition = TRANSITION;
     });
@@ -77,6 +84,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const type = typeSelect.value;
         toggle(branchWrapper, branchSelect, NEEDS_BRANCH.has(type), instant);
         toggle(refWrapper,    refInput,     NEEDS_REF.has(type),    instant);
+        toggle(batchWrapper,  batchInput,   NEEDS_BATCH.has(type),  instant);
+        toggle(prodWrapper,   prodInput,    NEEDS_BATCH.has(type),  instant);
+        toggle(expWrapper,    expInput,     NEEDS_BATCH.has(type),  instant);
     }
 
     update(true);

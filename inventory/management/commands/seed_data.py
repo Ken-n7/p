@@ -267,17 +267,12 @@ class Command(BaseCommand):
         self.stdout.write('Creating products...')
         products = {}
         for name, sku, category, unit_price, unit in PRODUCTS_DATA:
-            # Find matching batch info
-            batch_no = next(b for s, _, b, _ in PRODUCTION_DATA if s == sku)
             prod = Product.objects.create(
                 name=name,
                 sku=sku,
                 category=category,
                 quantity=0,
                 unit=unit,
-                batch_number=batch_no,
-                production_date=prod_date,
-                expiration_date=exp_date,
                 unit_price=unit_price,
             )
             products[sku] = prod
@@ -286,13 +281,16 @@ class Command(BaseCommand):
 
         # ── Production In ─────────────────────────────────────────────
         self.stdout.write('Recording production batches...')
-        for sku, qty, _, ref in PRODUCTION_DATA:
+        for sku, qty, batch_no, ref in PRODUCTION_DATA:
             prod = products[sku]
             mv = InventoryMovement.objects.create(
                 product=prod,
                 movement_type='production_in',
                 quantity=qty,
                 reference_no=ref,
+                batch_number=batch_no,
+                production_date=prod_date,
+                expiration_date=exp_date,
                 note='Initial harvest batch — April 2025 cycle',
                 created_by=warehouse,
             )
