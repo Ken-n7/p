@@ -143,6 +143,7 @@
                             <th>Date</th>
                             <th>Product</th>
                             <th>Qty</th>
+                            <th>Status</th>
                             <th>Branch</th>
                             <th>Reference</th>
                             <th>Note</th>
@@ -155,13 +156,22 @@
                             <td style="color:#64748b;white-space:nowrap;">{{ m.created_at|date:"M d, Y H:i" }}</td>
                             <td style="font-weight:500;">{{ m.product.name }}</td>
                             <td style="font-weight:600;">{{ m.quantity }}</td>
+                            <td>
+                                {% if m.back_order_status == 'pending' %}
+                                    <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
+                                {% elif m.back_order_status == 'fulfilled' %}
+                                    <span class="badge" style="background:#dcfce7;color:#15803d;">Fulfilled</span>
+                                {% elif m.back_order_status == 'cancelled' %}
+                                    <span class="badge" style="background:#f1f5f9;color:#475569;">Cancelled</span>
+                                {% else %}—{% endif %}
+                            </td>
                             <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
                             <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
                             <td style="color:#94a3b8;font-size:0.8rem;">{{ m.note|default:"—" }}</td>
                             <td style="color:#94a3b8;font-size:0.8rem;">{{ m.created_by.username|default:"—" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="7" class="text-center py-4" style="color:#94a3b8;">No back orders recorded.</td></tr>
+                        <tr><td colspan="8" class="text-center py-4" style="color:#94a3b8;">No back orders recorded.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

@@ -296,6 +296,9 @@ class RetailerSalesForm(forms.ModelForm):
         widgets = {
             'sales_date': forms.DateInput(attrs={'type': 'date'}),
         }
+        labels = {
+            'internal_delivery_qty': 'Quantity We Delivered',
+        }
 
     def clean(self):
         cleaned_data = super().clean()

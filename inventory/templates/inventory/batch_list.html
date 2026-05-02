@@ -15,12 +15,15 @@
             </thead>
             <tbody>
                 {% for b in batches %}
-                <tr>
+                <tr {% if b.available_quantity == 0 %}style="opacity:0.45;"{% endif %}>
                     <td>{{ b.created_at|date:"M d, Y H:i" }}</td>
                     <td><a href="{% url 'product_detail' b.product.pk %}">{{ b.product.name }}</a></td>
                     <td><code>{{ b.product.sku }}</code></td>
                     <td>{{ b.batch_number|default:"—" }}</td>
-                    <td><strong>{{ b.available_quantity }}</strong> / {{ b.quantity }} {{ b.product.unit }}</td>
+                    <td>
+                        <strong>{{ b.available_quantity }}</strong> / {{ b.quantity }} {{ b.product.unit }}
+                        {% if b.available_quantity == 0 %}<span class="badge ms-1" style="background:#f1f5f9;color:#475569;">Depleted</span>{% endif %}
+                    </td>
                     <td>{{ b.production_date|default:"—" }}</td>
                     <td>{{ b.expiration_date|default:"—" }}</td>
                     <td>
