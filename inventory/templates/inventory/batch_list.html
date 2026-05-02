@@ -1,0 +1,43 @@
+{% extends 'inventory/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-0">Production Batches</h5>
+        <p class="text-muted small mb-0">All recorded production-in batches across products.</p>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 dt-table">
+            <thead>
+                <tr><th>Date Recorded</th><th>Product</th><th>SKU</th><th>Batch No.</th><th>Quantity</th><th>Production Date</th><th>Expiration Date</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for b in batches %}
+                <tr>
+                    <td>{{ b.created_at|date:"M d, Y H:i" }}</td>
+                    <td><a href="{% url 'product_detail' b.product.pk %}">{{ b.product.name }}</a></td>
+                    <td><code>{{ b.product.sku }}</code></td>
+                    <td>{{ b.batch_number|default:"—" }}</td>
+                    <td>{{ b.quantity }} {{ b.product.unit }}</td>
+                    <td>{{ b.production_date|default:"—" }}</td>
+                    <td>{{ b.expiration_date|default:"—" }}</td>
+                    <td>
+                        {% if b.expiration_date %}
+                            {% if b.expiration_date < today %}
+                                <span class="badge" style="background:#fee2e2;color:#dc2626;">Expired</span>
+                            {% elif b.expiration_date <= seven_days %}
+                                <span class="badge" style="background:#fef3c7;color:#92400e;">Expiring Soon</span>
+                            {% else %}
+                                <span class="badge" style="background:#dcfce7;color:#15803d;">OK</span>
+                            {% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
