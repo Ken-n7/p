@@ -1,5 +1,4 @@
 {% extends 'inventory/base.html' %}
-{% load crispy_forms_tags %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -10,12 +9,92 @@
         </div>
         <div class="card">
             <div class="card-body p-4">
-                <form method="post">
+                <form method="post" id="recon-form">
                     {% csrf_token %}
-                    {{ form|crispy }}
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Link to Delivery <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <select id="id_delivery_movement" name="delivery_movement" class="form-select" style="font-size:0.855rem;">
+                            <option value="">— Select a delivery to auto-fill (optional) —</option>
+                            {% for m in form.delivery_movement.field.queryset %}
+                            <option value="{{ m.pk }}" {% if form.delivery_movement.value == m.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ m.reference_no|default:"No ref" }} — {{ m.product.name }} → {{ m.destination_branch|default:"?" }} ({{ m.quantity }} {{ m.product.unit }}, {{ m.created_at|date:"M d, Y" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="delivery-link-badge" class="mt-1" style="display:none;">
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
+                                <i class="fas fa-link" style="margin-right:4px;"></i>
+                                Delivery linked — Product, Branch, and Delivery Qty are auto-filled.
+                                <button type="button" id="clear-delivery" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
+                            </span>
+                        </div>
+                        {% if form.delivery_movement.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.delivery_movement.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <hr style="margin:0 0 16px;border-color:#f1f5f9;">
+
+                    <div class="mb-3" id="field-product">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Product</label>
+                        <select id="id_product" name="product" class="form-select" style="font-size:0.855rem;">
+                            <option value="">Select a product</option>
+                            {% for p in form.product.field.queryset %}
+                            <option value="{{ p.pk }}" {% if form.product.value == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" id="hidden_product" name="product" disabled>
+                        {% if form.product.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.product.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="field-branch">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Branch</label>
+                        <select id="id_branch" name="branch" class="form-select" style="font-size:0.855rem;">
+                            <option value="">Select a branch</option>
+                            {% for b in form.branch.field.queryset %}
+                            <option value="{{ b.pk }}" {% if form.branch.value == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" id="hidden_branch" name="branch" disabled>
+                        {% if form.branch.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.branch.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="field-delivery-qty">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Internal Delivery Qty</label>
+                        <input type="number" id="id_internal_delivery_qty" name="internal_delivery_qty" value="{{ form.internal_delivery_qty.value|default:'' }}" class="form-control" style="font-size:0.855rem;" min="0">
+                        {% if form.internal_delivery_qty.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.internal_delivery_qty.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Sales Date</label>
+                        <input type="date" id="id_sales_date" name="sales_date" value="{{ form.sales_date.value|default:'' }}" class="form-control" style="font-size:0.855rem;">
+                        {% if form.sales_date.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.sales_date.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Sold Quantity</label>
+                        <input type="number" id="id_sold_quantity" name="sold_quantity" value="{{ form.sold_quantity.value|default:'' }}" class="form-control" style="font-size:0.855rem;" min="0">
+                        {% if form.sold_quantity.errors %}
+                        <div class="text-danger" style="font-size:0.8rem;">{{ form.sold_quantity.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger" style="font-size:0.855rem;">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
                     <div class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
                         <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Save Sales Data
+                            <i class="fas fa-save"></i> Review & Save
                         </button>
                         <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
@@ -24,4 +103,62 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const deliverySelect = document.getElementById('id_delivery_movement');
+const productSelect = document.getElementById('id_product');
+const branchSelect = document.getElementById('id_branch');
+const deliveryQtyInput = document.getElementById('id_internal_delivery_qty');
+const badge = document.getElementById('delivery-link-badge');
+const clearBtn = document.getElementById('clear-delivery');
+
+function lockFields(lock) {
+    productSelect.disabled = lock;
+    productSelect.style.background = lock ? '#f8fafc' : '';
+    document.getElementById('hidden_product').disabled = !lock;
+
+    branchSelect.disabled = lock;
+    branchSelect.style.background = lock ? '#f8fafc' : '';
+    document.getElementById('hidden_branch').disabled = !lock;
+
+    deliveryQtyInput.readOnly = lock;
+    deliveryQtyInput.style.background = lock ? '#f8fafc' : '';
+
+    badge.style.display = lock ? 'block' : 'none';
+}
+
+deliverySelect.addEventListener('change', function () {
+    const id = this.value;
+    if (!id) { lockFields(false); return; }
+
+    fetch(`{% url 'delivery_details' %}?movement_id=${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.product_id) {
+                productSelect.value = data.product_id;
+                branchSelect.value = data.branch_id || '';
+                deliveryQtyInput.value = data.qty;
+                document.getElementById('hidden_product').value = data.product_id;
+                document.getElementById('hidden_branch').value = data.branch_id || '';
+                lockFields(true);
+            }
+        });
+});
+
+clearBtn.addEventListener('click', function () {
+    deliverySelect.value = '';
+    productSelect.value = '';
+    branchSelect.value = '';
+    deliveryQtyInput.value = '';
+    document.getElementById('hidden_product').value = '';
+    document.getElementById('hidden_branch').value = '';
+    lockFields(false);
+});
+
+if (deliverySelect.value) {
+    deliverySelect.dispatchEvent(new Event('change'));
+}
+</script>
 {% endblock %}

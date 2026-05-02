@@ -16,6 +16,7 @@ urlpatterns = [
     path('movements/add/', views.movement_create, name='movement_create'),
     path('batches/', views.batch_list, name='batch_list'),
     path('api/batches-for-product/', views.batches_for_product, name='batches_for_product'),
+    path('api/delivery-details/', views.delivery_details, name='delivery_details'),
 
     # Reconciliation
     path('reconciliation/', views.reconciliation_list, name='reconciliation_list'),

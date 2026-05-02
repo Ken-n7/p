@@ -123,6 +123,7 @@
                     <th>Date</th>
                     <th>Branch</th>
                     <th>Product</th>
+                    <th>Delivery</th>
                     <th class="text-end">Sold (Retailer)</th>
                     <th class="text-end">Internal Delivery</th>
                     <th class="text-end">
@@ -143,6 +144,7 @@
                     <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
                     <td style="font-weight:500;">{{ r.branch }}</td>
                     <td>{{ r.product }}</td>
+                    <td>{{ r.delivery_movement.reference_no|default:"—" }}</td>
                     <td class="text-end">{{ r.sold_quantity }} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span></td>
                     <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}{% if r.internal_delivery_qty %} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span>{% endif %}</td>
                     <td class="text-end">
