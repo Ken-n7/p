@@ -91,7 +91,7 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
 
     class Meta:
         model = InventoryMovement
-        fields = ['product', 'source_batch', 'destination_branch', 'quantity', 'reference_no', 'closes_back_order', 'note']
+        fields = ['closes_back_order', 'product', 'source_batch', 'destination_branch', 'quantity', 'reference_no', 'note']
         widgets = {
             'note': forms.Textarea(attrs={'rows': 3}),
         }
@@ -146,7 +146,7 @@ class ReturnInForm(_MovementFormMixin, forms.ModelForm):
 
     class Meta:
         model = InventoryMovement
-        fields = ['product', 'destination_branch', 'source_delivery', 'quantity', 'reference_no', 'note']
+        fields = ['source_delivery', 'product', 'destination_branch', 'quantity', 'reference_no', 'note']
         widgets = {
             'note': forms.Textarea(attrs={'rows': 3}),
         }
@@ -204,7 +204,7 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
 
     class Meta:
         model = InventoryMovement
-        fields = ['product', 'loss_location', 'source_batch', 'source_delivery', 'quantity', 'note']
+        fields = ['loss_location', 'source_delivery', 'product', 'source_batch', 'quantity', 'note']
         widgets = {
             'note': forms.Textarea(attrs={'rows': 3}),
         }
