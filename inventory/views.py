@@ -9,8 +9,27 @@ from django.contrib import messages
 from django.db.models import Sum, Count
 
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
-from .forms import ProductForm, InventoryMovementForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm
+from .forms import (
+    ProductForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm,
+    ProductionInForm, DeliveryOutForm, ReturnInForm, LossForm, BackOrderForm,
+)
 
+
+_TYPE_ROLES = {
+    'production_in': ('admin', 'warehouse'),
+    'delivery_out': ('admin', 'sales'),
+    'return_in': ('admin', 'warehouse'),
+    'loss': ('admin', 'warehouse'),
+    'back_order': ('admin', 'sales'),
+}
+
+_MOVEMENT_FORMS = {
+    'production_in': ProductionInForm,
+    'delivery_out': DeliveryOutForm,
+    'return_in': ReturnInForm,
+    'loss': LossForm,
+    'back_order': BackOrderForm,
+}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -245,21 +264,46 @@ def movement_list(request):
 @login_required
 def movement_create(request):
     if not _has_role(request.user, 'admin', 'warehouse', 'sales'):
-        messages.error(request, 'Access denied. Recording movements is for admin, warehouse, and sales roles only.')
+        messages.error(request, 'Access denied.')
         return redirect('movement_list')
+
+    movement_type = request.POST.get('movement_type') or request.GET.get('type', '')
+
+    if not movement_type:
+        allowed = [t for t, roles in _TYPE_ROLES.items() if _has_role(request.user, *roles)]
+        return render(request, 'inventory/movement_type_select.html', {'allowed_types': allowed, 'title': 'Record Movement'})
+
+    if movement_type not in _MOVEMENT_FORMS:
+        messages.error(request, 'Invalid movement type.')
+        return redirect('movement_create')
+    if not _has_role(request.user, *_TYPE_ROLES[movement_type]):
+        messages.error(request, 'You are not permitted to record this movement type.')
+        return redirect('movement_create')
+
+    FormClass = _MOVEMENT_FORMS[movement_type]
+
     if request.method == 'POST':
-        form = InventoryMovementForm(request.POST, user=request.user)
+        form = FormClass(request.POST, user=request.user)
         if form.is_valid():
             movement = form.save(commit=False)
+            movement.movement_type = movement_type
             movement.created_by = request.user
+            if movement_type == 'back_order':
+                movement.back_order_status = 'pending'
+            if movement_type == 'return_in' and movement.source_delivery:
+                movement.source_batch = movement.source_delivery.source_batch
             movement.save()
-            _log(request.user, 'create', movement,
-                 f"type={movement.movement_type}, qty={movement.quantity}, product={movement.product}")
+            if movement_type == 'delivery_out' and movement.closes_back_order:
+                bo = movement.closes_back_order
+                bo.back_order_status = 'fulfilled'
+                bo.save(update_fields=['back_order_status'])
+            _log(request.user, 'create', movement, f"type={movement_type}, qty={movement.quantity}, product={movement.product}")
             messages.success(request, 'Movement recorded.')
             return redirect('movement_list')
     else:
-        form = InventoryMovementForm(user=request.user)
-    return render(request, 'inventory/movement_form.html', {'form': form, 'title': 'Record Movement'})
+        form = FormClass(user=request.user)
+
+    return render(request, 'inventory/movement_form.html', {'form': form, 'movement_type': movement_type, 'title': f"Record — {dict(InventoryMovement.MOVEMENT_TYPES).get(movement_type, movement_type)}"})
 
 
 @login_required
@@ -303,6 +347,36 @@ def batches_for_product(request):
                 'available': avail,
             })
     return JsonResponse({'batches': result})
+
+
+@login_required
+def deliveries_for_product_branch(request):
+    product_id = request.GET.get('product_id')
+    branch_id = request.GET.get('branch_id')
+    if not product_id:
+        return JsonResponse({'deliveries': []})
+    qs = InventoryMovement.objects.filter(product_id=product_id, movement_type='delivery_out')
+    if branch_id:
+        qs = qs.filter(destination_branch_id=branch_id)
+    qs = qs.select_related('product').order_by('-created_at')
+    result = []
+    for m in qs:
+        already_returned = InventoryMovement.objects.filter(source_delivery=m, movement_type='return_in').aggregate(total=Sum('quantity'))['total'] or 0
+        returnable = m.quantity - already_returned
+        if returnable > 0:
+            result.append({'id': m.pk, 'label': f"{m.reference_no or 'No ref'} — {m.quantity} {m.product.unit} delivered, {returnable} returnable ({m.created_at.strftime('%b %d, %Y')})"})
+    return JsonResponse({'deliveries': result})
+
+
+@login_required
+def pending_back_orders_for_product_branch(request):
+    product_id = request.GET.get('product_id')
+    branch_id = request.GET.get('branch_id')
+    if not product_id or not branch_id:
+        return JsonResponse({'back_orders': []})
+    qs = InventoryMovement.objects.filter(product_id=product_id, movement_type='back_order', back_order_status='pending', destination_branch_id=branch_id).select_related('product').order_by('-created_at')
+    result = [{'id': m.pk, 'label': f"{m.quantity} {m.product.unit} — {m.created_at.strftime('%b %d, %Y')} ({m.note[:40] if m.note else 'no note'})"} for m in qs]
+    return JsonResponse({'back_orders': result})
 
 
 @login_required
