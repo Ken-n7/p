@@ -1,2 +1,258 @@
 {% extends 'inventory/base.html' %}
-{% block content %}<div class="row justify-content-center"><div class="col-md-7"><div class="mb-3"><a href="{% url 'movement_create' %}">Movement Types</a><h5>{{ title }}</h5></div><div class="card"><div class="card-body p-4"><form method="post" id="movement-form">{% csrf_token %}<input type="hidden" name="movement_type" value="{{ movement_type }}">{{ form.as_p }}<button type="submit" class="btn btn-success">Record Movement</button></form></div></div></div></div>{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="mb-3">
+            <a href="{% url 'movement_create' %}">Movement Types</a>
+            <h5>{{ title }}</h5>
+        </div>
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post" id="movement-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="movement_type" value="{{ movement_type }}">
+
+                    {% if movement_type == 'delivery_out' %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.closes_back_order.label }}</label>
+                        <select id="id_closes_back_order" name="closes_back_order" class="form-control">
+                            <option value="">— None (does not close a back order) —</option>
+                            {% for bo in form.closes_back_order.field.queryset %}
+                            <option value="{{ bo.pk }}" data-product-id="{{ bo.product_id }}" data-branch-id="{{ bo.destination_branch_id|default:'' }}" {% if form.closes_back_order.value == bo.pk|stringformat:"s" %}selected{% endif %}>{{ bo }}</option>
+                            {% endfor %}
+                        </select>
+                        <div id="back-order-link-badge" class="mt-1" style="display:none;">
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
+                                <i class="fas fa-link" style="margin-right:4px;"></i>
+                                Back order linked — Product and Branch are auto-filled.
+                                <button type="button" id="clear-back-order" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
+                            </span>
+                        </div>
+                        {% if form.closes_back_order.errors %}<div class="text-danger">{{ form.closes_back_order.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.product.label }}</label>{{ form.product }}
+                        <input type="hidden" id="hidden_product" name="product" disabled>
+                        {% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.source_batch.label }}</label>{{ form.source_batch }}
+                        {% if form.source_batch.errors %}<div class="text-danger">{{ form.source_batch.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}
+                        <input type="hidden" id="hidden_destination_branch" name="destination_branch" disabled>
+                        {% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.reference_no.label }}</label>{{ form.reference_no }}{% if form.reference_no.errors %}<div class="text-danger">{{ form.reference_no.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+
+                    {% elif movement_type == 'return_in' %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.source_delivery.label }}</label>{{ form.source_delivery }}
+                        <div id="delivery-link-badge" class="mt-1" style="display:none;">
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
+                                <i class="fas fa-link" style="margin-right:4px;"></i>
+                                Delivery linked — Product and Branch are auto-filled.
+                                <button type="button" id="clear-delivery" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
+                            </span>
+                        </div>
+                        {% if form.source_delivery.errors %}<div class="text-danger">{{ form.source_delivery.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.product.label }}</label>{{ form.product }}
+                        <input type="hidden" id="hidden_product" name="product" disabled>
+                        {% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}
+                        <input type="hidden" id="hidden_destination_branch" name="destination_branch" disabled>
+                        {% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.reference_no.label }}</label>{{ form.reference_no }}{% if form.reference_no.errors %}<div class="text-danger">{{ form.reference_no.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+
+                    {% elif movement_type == 'loss' %}
+                    <div class="mb-3"><label class="form-label">{{ form.loss_location.label }}</label>{{ form.loss_location }}{% if form.loss_location.errors %}<div class="text-danger">{{ form.loss_location.errors }}</div>{% endif %}</div>
+                    <div class="mb-3" id="source-delivery-wrap">
+                        <label class="form-label">{{ form.source_delivery.label }}</label>{{ form.source_delivery }}
+                        {% if form.source_delivery.errors %}<div class="text-danger">{{ form.source_delivery.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.product.label }}</label>{{ form.product }}
+                        <input type="hidden" id="hidden_product" name="product" disabled>
+                        <div id="loss-delivery-link-badge" class="mt-1" style="display:none;">
+                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
+                                <i class="fas fa-link" style="margin-right:4px;"></i>
+                                Delivery linked — Product is auto-filled.
+                                <button type="button" id="clear-loss-delivery" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
+                            </span>
+                        </div>
+                        {% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3"><label class="form-label">{{ form.source_batch.label }}</label>{{ form.source_batch }}{% if form.source_batch.errors %}<div class="text-danger">{{ form.source_batch.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
+                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+                    {% else %}
+                    {{ form.as_p }}
+                    {% endif %}
+
+                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                    <button type="submit" class="btn btn-success">Record Movement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+    const movementType = '{{ movement_type }}';
+
+    function applyLinkedLock(selectEl, hiddenEl, value, lock) {
+        if (!selectEl || !hiddenEl) return;
+        selectEl.disabled = lock;
+        selectEl.style.background = lock ? '#f8fafc' : '';
+        hiddenEl.disabled = !lock;
+        hiddenEl.value = lock ? (value || '') : '';
+    }
+
+    if (movementType === 'delivery_out') {
+        const backOrder = document.getElementById('id_closes_back_order');
+        const product = document.getElementById('id_product');
+        const branch = document.getElementById('id_destination_branch');
+        const hiddenProduct = document.getElementById('hidden_product');
+        const hiddenBranch = document.getElementById('hidden_destination_branch');
+        const badge = document.getElementById('back-order-link-badge');
+        const clearBtn = document.getElementById('clear-back-order');
+
+        backOrder.addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            if (!this.value) {
+                applyLinkedLock(product, hiddenProduct, '', false);
+                applyLinkedLock(branch, hiddenBranch, '', false);
+                badge.style.display = 'none';
+                return;
+            }
+            const productId = selected.dataset.productId || '';
+            const branchId = selected.dataset.branchId || '';
+            product.value = productId;
+            branch.value = branchId;
+            applyLinkedLock(product, hiddenProduct, productId, true);
+            applyLinkedLock(branch, hiddenBranch, branchId, true);
+            badge.style.display = 'block';
+        });
+
+        clearBtn.addEventListener('click', function(){
+            backOrder.value = '';
+            product.value = '';
+            branch.value = '';
+            applyLinkedLock(product, hiddenProduct, '', false);
+            applyLinkedLock(branch, hiddenBranch, '', false);
+            badge.style.display = 'none';
+        });
+
+        if (backOrder.value) backOrder.dispatchEvent(new Event('change'));
+    }
+
+    if (movementType === 'return_in') {
+        const delivery = document.getElementById('id_source_delivery');
+        const product = document.getElementById('id_product');
+        const branch = document.getElementById('id_destination_branch');
+        const hiddenProduct = document.getElementById('hidden_product');
+        const hiddenBranch = document.getElementById('hidden_destination_branch');
+        const badge = document.getElementById('delivery-link-badge');
+        const clearBtn = document.getElementById('clear-delivery');
+
+        delivery.addEventListener('change', function(){
+            const id = this.value;
+            if (!id) {
+                applyLinkedLock(product, hiddenProduct, '', false);
+                applyLinkedLock(branch, hiddenBranch, '', false);
+                badge.style.display = 'none';
+                return;
+            }
+            fetch(`{% url 'delivery_details' %}?movement_id=${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    const productId = data.product_id || '';
+                    const branchId = data.branch_id || '';
+                    product.value = productId;
+                    branch.value = branchId;
+                    applyLinkedLock(product, hiddenProduct, productId, true);
+                    applyLinkedLock(branch, hiddenBranch, branchId, true);
+                    badge.style.display = 'block';
+                });
+        });
+
+        clearBtn.addEventListener('click', function(){
+            delivery.value = '';
+            product.value = '';
+            branch.value = '';
+            applyLinkedLock(product, hiddenProduct, '', false);
+            applyLinkedLock(branch, hiddenBranch, '', false);
+            badge.style.display = 'none';
+        });
+
+        if (delivery.value) delivery.dispatchEvent(new Event('change'));
+    }
+
+    if (movementType === 'loss') {
+        const location = document.getElementById('id_loss_location');
+        const sourceDeliveryWrap = document.getElementById('source-delivery-wrap');
+        const delivery = document.getElementById('id_source_delivery');
+        const product = document.getElementById('id_product');
+        const hiddenProduct = document.getElementById('hidden_product');
+        const badge = document.getElementById('loss-delivery-link-badge');
+        const clearBtn = document.getElementById('clear-loss-delivery');
+
+        function updateDeliveryVisibility(){
+            const show = location.value === 'transit' || location.value === 'branch';
+            sourceDeliveryWrap.style.display = show ? '' : 'none';
+            if (!show) {
+                delivery.value = '';
+                product.value = '';
+                applyLinkedLock(product, hiddenProduct, '', false);
+                badge.style.display = 'none';
+            }
+        }
+
+        location.addEventListener('change', updateDeliveryVisibility);
+        delivery.addEventListener('change', function(){
+            const id = this.value;
+            if (!id) {
+                product.value = '';
+                applyLinkedLock(product, hiddenProduct, '', false);
+                badge.style.display = 'none';
+                return;
+            }
+            fetch(`{% url 'delivery_details' %}?movement_id=${id}`)
+                .then(r => r.json())
+                .then(data => {
+                    const productId = data.product_id || '';
+                    product.value = productId;
+                    applyLinkedLock(product, hiddenProduct, productId, true);
+                    badge.style.display = 'block';
+                });
+        });
+
+        clearBtn.addEventListener('click', function(){
+            delivery.value = '';
+            product.value = '';
+            applyLinkedLock(product, hiddenProduct, '', false);
+            badge.style.display = 'none';
+        });
+
+        updateDeliveryVisibility();
+        if (delivery.value && sourceDeliveryWrap.style.display !== 'none') {
+            delivery.dispatchEvent(new Event('change'));
+        }
+    }
+})();
+</script>
+{% endblock %}
