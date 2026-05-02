@@ -143,8 +143,8 @@
                     <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
                     <td style="font-weight:500;">{{ r.branch }}</td>
                     <td>{{ r.product }}</td>
-                    <td class="text-end">{{ r.sold_quantity }}</td>
-                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}</td>
+                    <td class="text-end">{{ r.sold_quantity }} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span></td>
+                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}{% if r.internal_delivery_qty %} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span>{% endif %}</td>
                     <td class="text-end">
                         {% if r.discrepancy and r.discrepancy < 0 %}
                             <span class="badge" style="background:#fee2e2;color:#dc2626;" title="Sold more than delivered — likely a counting error">{{ r.discrepancy }} over</span>

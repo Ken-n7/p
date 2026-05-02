@@ -4,10 +4,19 @@ from django.utils import timezone
 
 
 class Product(models.Model):
+    UNIT_CHOICES = [
+        ('kg',     'kg'),
+        ('pcs',    'pcs'),
+        ('bundle', 'bundle'),
+        ('tray',   'tray'),
+        ('bag',    'bag'),
+    ]
+
     name = models.CharField(max_length=200)
     sku = models.CharField(max_length=50, unique=True)
     category = models.CharField(max_length=100, default="Fresh Produce")
     quantity = models.PositiveIntegerField(default=0)
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='pcs')
     batch_number = models.CharField(max_length=50, blank=True)
     production_date = models.DateField(null=True, blank=True)
     expiration_date = models.DateField(null=True, blank=True)
