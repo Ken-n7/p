@@ -132,11 +132,11 @@ DELIVERIES_DATA = [
 
 # (sku, qty, note)
 LOSSES_DATA = [
-    ('VEG-001',  5, 'Wilting during warehouse storage — disposed before dispatch'),
-    ('VEG-002',  8, 'Yellowing detected during quality check; exceeded safe shelf life'),
-    ('VEG-007',  6, 'Pest damage found on inspection — batch quarantined and discarded'),
-    ('VEG-010',  4, 'Bruising from improper stacking during inbound transport'),
-    ('VEG-011',  7, 'Spoilage due to cooling unit downtime — 4-hour temperature breach'),
+    ('VEG-001',  5, 'Wilting during warehouse storage — disposed before dispatch', 'warehouse'),
+    ('VEG-002',  8, 'Yellowing detected during quality check; exceeded safe shelf life', 'warehouse'),
+    ('VEG-007',  6, 'Pest damage found on inspection — batch quarantined and discarded', 'warehouse'),
+    ('VEG-010',  4, 'Bruising from improper stacking during inbound transport', 'warehouse'),
+    ('VEG-011',  7, 'Spoilage due to cooling unit downtime — 4-hour temperature breach', 'warehouse'),
 ]
 
 # (sku, branch_name, qty, reference_no, note)
@@ -294,6 +294,7 @@ class Command(BaseCommand):
                 expiration_date=exp_date,
                 note='Initial harvest batch — April 2025 cycle',
                 created_by=warehouse,
+                loss_location=loss_loc,
             )
             production_batches[sku] = mv
             _log(warehouse, 'create', mv, f"type=production_in, qty={qty}, product={prod}")
@@ -301,6 +302,7 @@ class Command(BaseCommand):
         # ── Delivery Out ──────────────────────────────────────────────
         self.stdout.write('Recording deliveries...')
         delivery_count = 0
+        delivery_movements = {}
         for sku, branch_name, qty, ref in DELIVERIES_DATA:
             prod   = products[sku]
             branch = branches[branch_name]
@@ -313,15 +315,17 @@ class Command(BaseCommand):
                 note=f'Weekly consignment delivery to {branch_name}',
                 source_batch=production_batches[sku],
                 created_by=sales,
+                back_order_status='pending',
             )
             _log(sales, 'create', mv,
                  f"type=delivery_out, qty={qty}, product={prod}, branch={branch_name}")
+            delivery_movements[(sku, branch_name)] = mv
             delivery_count += 1
         self.stdout.write(f'  {delivery_count} deliveries recorded.')
 
         # ── Loss ──────────────────────────────────────────────────────
         self.stdout.write('Recording losses...')
-        for sku, qty, note in LOSSES_DATA:
+        for sku, qty, note, loss_loc in LOSSES_DATA:
             prod = products[sku]
             mv = InventoryMovement.objects.create(
                 product=prod,
@@ -329,6 +333,7 @@ class Command(BaseCommand):
                 quantity=qty,
                 note=note,
                 source_batch=production_batches[sku],
+                source_delivery=delivery_movements.get((sku, branch_name)),
                 created_by=warehouse,
             )
             _log(warehouse, 'create', mv, f"type=loss, qty={qty}, product={prod}")
@@ -346,6 +351,7 @@ class Command(BaseCommand):
                 reference_no=ref,
                 note=note,
                 source_batch=production_batches[sku],
+                source_delivery=delivery_movements.get((sku, branch_name)),
                 created_by=warehouse,
             )
             _log(warehouse, 'create', mv,
@@ -363,6 +369,7 @@ class Command(BaseCommand):
                 destination_branch=branch,
                 note=note,
                 created_by=sales,
+                back_order_status='pending',
             )
             _log(sales, 'create', mv,
                  f"type=back_order, qty={qty}, product={prod}, branch={branch_name}")
