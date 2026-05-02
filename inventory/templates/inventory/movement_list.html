@@ -90,7 +90,7 @@
                 {% for m in movements %}
                 <tr>
                     <td style="color:#64748b;white-space:nowrap;">{{ m.created_at|date:"M d, Y H:i" }}</td>
-                    <td style="font-weight:500;">{{ m.product.name }}</td>
+                    <td style="font-weight:500;"><a href="{% url 'product_detail' m.product.pk %}" style="color:#4f46e5;text-decoration:none;">{{ m.product.name }}</a></td>
                     <td>
                         {% if m.movement_type == 'production_in' %}
                             <span class="badge" style="background:#dcfce7;color:#15803d;">{{ m.get_movement_type_display }}</span>
