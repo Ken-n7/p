@@ -11,7 +11,7 @@ from django.db.models import Sum, Count
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
 from .forms import (
     ProductForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm,
-    ProductionInForm, DeliveryOutForm, ReturnInForm, LossForm, BackOrderForm,
+    ProductionInForm, DeliveryOutForm, LossForm, BackOrderForm,
 )
 
 
@@ -295,6 +295,20 @@ def movement_create(request):
                 bo = movement.closes_back_order
                 bo.back_order_status = 'fulfilled'
                 bo.save(update_fields=['back_order_status'])
+                if movement.quantity < bo.quantity:
+                    remainder = bo.quantity - movement.quantity
+                    new_bo = InventoryMovement(
+                        product=bo.product,
+                        movement_type='back_order',
+                        quantity=remainder,
+                        destination_branch=bo.destination_branch,
+                        back_order_status='pending',
+                        note=f"Remainder from partial fulfillment of back order #{bo.pk} — originally {bo.quantity} {bo.product.unit}, delivered {movement.quantity}",
+                        created_by=request.user,
+                    )
+                    new_bo.save()
+                    _log(request.user, 'create', new_bo, f"type=back_order, qty={new_bo.quantity}, product={new_bo.product}")
+                    messages.warning(request, f"Partial delivery: {movement.quantity} of {bo.quantity} delivered. A new back order for the remaining {remainder} has been created automatically.")
             _log(request.user, 'create', movement, f"type={movement_type}, qty={movement.quantity}, product={movement.product}")
             messages.success(request, 'Movement recorded.')
             return redirect('movement_list')

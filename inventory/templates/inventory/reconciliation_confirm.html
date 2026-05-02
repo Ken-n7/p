@@ -50,6 +50,8 @@
                                     <span class="badge" style="background:#dcfce7;color:#15803d;">0 — will auto-reconcile</span>
                                 {% elif discrepancy > 0 %}
                                     <span class="badge" style="background:#fef3c7;color:#92400e;">+{{ discrepancy }} unsold</span>
+                                {% else %}
+                                    <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ discrepancy }} over-sold</span>
                                 {% endif %}
                             </td>
                         </tr>
