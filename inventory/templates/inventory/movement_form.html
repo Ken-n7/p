@@ -48,41 +48,80 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const typeSelect    = document.getElementById('id_movement_type');
+    const productSelect = document.getElementById('id_product');
     const branchWrapper = document.getElementById('div_id_destination_branch');
     const branchSelect  = document.getElementById('id_destination_branch');
     const refWrapper    = document.getElementById('div_id_reference_no');
     const refInput      = document.getElementById('id_reference_no');
+    const batchWrapper  = document.getElementById('div_id_batch_number');
+    const batchInput    = document.getElementById('id_batch_number');
+    const prodWrapper   = document.getElementById('div_id_production_date');
+    const prodInput     = document.getElementById('id_production_date');
+    const expWrapper    = document.getElementById('div_id_expiration_date');
+    const expInput      = document.getElementById('id_expiration_date');
+    const srcBatchWrapper = document.getElementById('div_id_source_batch');
+    const srcBatchSelect  = document.getElementById('id_source_batch');
 
-    const NEEDS_BRANCH = new Set(['delivery_out', 'back_order', 'return_in']);
-    const NEEDS_REF    = new Set(['delivery_out', 'return_in']);
-    const TRANSITION   = 'max-height 0.3s ease, opacity 0.25s ease';
+    const NEEDS_BRANCH     = new Set(['delivery_out', 'back_order', 'return_in']);
+    const NEEDS_REF        = new Set(['delivery_out', 'return_in']);
+    const NEEDS_PROD_BATCH = new Set(['production_in']);
+    const NEEDS_SRC_BATCH  = new Set(['delivery_out', 'loss', 'return_in']);
+    const TRANSITION = 'max-height 0.3s ease, opacity 0.25s ease';
 
-    [branchWrapper, refWrapper].forEach(w => {
-        w.style.overflow   = 'hidden';
-        w.style.transition = TRANSITION;
+    [branchWrapper, refWrapper, batchWrapper, prodWrapper, expWrapper, srcBatchWrapper].forEach(w => {
+        if (w) { w.style.overflow = 'hidden'; w.style.transition = TRANSITION; }
     });
 
     function toggle(wrapper, clearEl, show, instant) {
+        if (!wrapper) return;
         if (!show && clearEl) clearEl.value = '';
         if (instant) wrapper.style.transition = 'none';
         wrapper.style.maxHeight = show ? '120px' : '0';
-        wrapper.style.opacity   = show ? '1'     : '0';
-        if (instant) {
-            wrapper.offsetHeight;
-            wrapper.style.transition = TRANSITION;
-        }
+        wrapper.style.opacity   = show ? '1' : '0';
+        if (instant) { wrapper.offsetHeight; wrapper.style.transition = TRANSITION; }
     }
 
     function update(instant) {
         const type = typeSelect.value;
-        toggle(branchWrapper, branchSelect, NEEDS_BRANCH.has(type), instant);
-        toggle(refWrapper,    refInput,     NEEDS_REF.has(type),    instant);
+        toggle(branchWrapper,   branchSelect, NEEDS_BRANCH.has(type),     instant);
+        toggle(refWrapper,      refInput,     NEEDS_REF.has(type),        instant);
+        toggle(batchWrapper,    batchInput,   NEEDS_PROD_BATCH.has(type), instant);
+        toggle(prodWrapper,     prodInput,    NEEDS_PROD_BATCH.has(type), instant);
+        toggle(expWrapper,      expInput,     NEEDS_PROD_BATCH.has(type), instant);
+        toggle(srcBatchWrapper, null,         NEEDS_SRC_BATCH.has(type),  instant);
+    }
+
+    function loadBatches() {
+        if (!srcBatchSelect) return;
+        const productId = productSelect ? productSelect.value : '';
+        const type = typeSelect.value;
+        if (!productId || !NEEDS_SRC_BATCH.has(type)) {
+            srcBatchSelect.innerHTML = '<option value="">Select a batch</option>';
+            return;
+        }
+        fetch(`/api/batches-for-product/?product_id=${productId}`)
+            .then(r => r.json())
+            .then(data => {
+                const current = srcBatchSelect.value;
+                srcBatchSelect.innerHTML = '<option value="">Select a batch</option>';
+                data.batches.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.label;
+                    if (String(b.id) === String(current)) opt.selected = true;
+                    srcBatchSelect.appendChild(opt);
+                });
+                if (data.batches.length === 0) {
+                    srcBatchSelect.innerHTML = '<option value="">No available batches</option>';
+                }
+            });
     }
 
     update(true);
-    typeSelect.addEventListener('change', () => update(false));
+    loadBatches();
+    typeSelect.addEventListener('change', () => { update(false); loadBatches(); });
+    if (productSelect) productSelect.addEventListener('change', loadBatches);
 
-    // Show override checkbox only when server returned a warning on it
     const overrideWrapper = document.getElementById('div_id_confirm_override');
     if (overrideWrapper && overrideWrapper.querySelector('.invalid-feedback, .errorlist')) {
         overrideWrapper.style.display = 'block';

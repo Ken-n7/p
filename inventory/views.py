@@ -1,6 +1,6 @@
 import csv
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
@@ -69,10 +69,11 @@ def dashboard(request):
     total_products = Product.objects.count()
     total_movements = InventoryMovement.objects.count()
     low_stock = Product.objects.filter(quantity__lt=10)
-    near_expiry = Product.objects.filter(
+    near_expiry = InventoryMovement.objects.filter(
+        movement_type='production_in',
         expiration_date__isnull=False,
         expiration_date__lte=timezone.now().date() + timezone.timedelta(days=7)
-    )
+    ).select_related('product').order_by('expiration_date')
     recent_movements = InventoryMovement.objects.select_related('product', 'created_by', 'destination_branch').order_by('-created_at')[:10]
     deliveries_by_branch = (
         InventoryMovement.objects
@@ -146,7 +147,8 @@ def product_detail(request, pk):
         .select_related('destination_branch', 'created_by')
         .order_by('-created_at')
     )
-    total_produced  = movements.filter(movement_type='production_in').aggregate(total=Sum('quantity'))['total'] or 0
+    production_batches = movements.filter(movement_type='production_in')
+    total_produced  = production_batches.aggregate(total=Sum('quantity'))['total'] or 0
     total_delivered = movements.filter(movement_type='delivery_out').aggregate(total=Sum('quantity'))['total'] or 0
     total_returned  = movements.filter(movement_type='return_in').aggregate(total=Sum('quantity'))['total'] or 0
     total_lost      = movements.filter(movement_type='loss').aggregate(total=Sum('quantity'))['total'] or 0
@@ -170,6 +172,7 @@ def product_detail(request, pk):
         'total_sold': total_sold,
         'is_admin': _is_admin(request.user),
         'today': timezone.now().date(),
+        'seven_days': timezone.now().date() + timezone.timedelta(days=7),
         'title': product.name,
     })
 
@@ -257,6 +260,49 @@ def movement_create(request):
     else:
         form = InventoryMovementForm(user=request.user)
     return render(request, 'inventory/movement_form.html', {'form': form, 'title': 'Record Movement'})
+
+
+@login_required
+def batch_list(request):
+    if not _has_role(request.user, 'admin', 'warehouse'):
+        messages.error(request, 'Access denied. Batch records are for admin and warehouse roles only.')
+        return redirect('dashboard')
+
+    batches = (
+        InventoryMovement.objects
+        .filter(movement_type='production_in')
+        .select_related('product', 'created_by')
+        .order_by('-created_at')
+    )
+
+    return render(request, 'inventory/batch_list.html', {
+        'batches': batches,
+        'today': timezone.now().date(),
+        'seven_days': timezone.now().date() + timezone.timedelta(days=7),
+        'title': 'Batches',
+    })
+
+
+
+@login_required
+def batches_for_product(request):
+    product_id = request.GET.get('product_id')
+    if not product_id:
+        return JsonResponse({'batches': []})
+    batches = InventoryMovement.objects.filter(
+        product_id=product_id,
+        movement_type='production_in',
+    ).order_by('expiration_date')
+    result = []
+    for b in batches:
+        avail = b.available_quantity()
+        if avail > 0:
+            result.append({
+                'id': b.pk,
+                'label': f"{b.batch_number} — exp {b.expiration_date} ({avail} {b.product.unit} available)",
+                'available': avail,
+            })
+    return JsonResponse({'batches': result})
 
 
 # ── Reconciliation ────────────────────────────────────────────────────────────

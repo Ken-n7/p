@@ -35,10 +35,7 @@
                     <th>SKU</th>
                     <th>Category</th>
                     <th>Stock</th>
-                    <th>Batch</th>
-                    <th>Production</th>
-                    <th>Expiry</th>
-                    <th>Unit Price</th>
+                                        <th>Unit Price</th>
                     <th></th>
                 </tr>
             </thead>
@@ -59,12 +56,7 @@
                         <span class="badge ms-1" style="background:#fef3c7;color:#92400e;">Low</span>
                         {% endif %}
                     </td>
-                    <td style="color:#64748b;">{{ p.batch_number|default:"—" }}</td>
-                    <td style="color:#64748b;">{{ p.production_date|default:"—" }}</td>
-                    <td style="color:{% if p.expiration_date %}#64748b{% else %}#94a3b8{% endif %};">
-                        {{ p.expiration_date|default:"—" }}
-                    </td>
-                    <td style="color:#64748b;">{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
+                                        <td style="color:#64748b;">{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
                     <td class="text-nowrap">
                         <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline-secondary btn-sm me-1">
                             <i class="fas fa-edit"></i>
