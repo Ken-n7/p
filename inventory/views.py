@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib import messages
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Exists, OuterRef
 
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
 from .forms import (
@@ -233,7 +233,15 @@ def product_delete(request, pk):
 
 @login_required
 def movement_list(request):
-    movements = InventoryMovement.objects.select_related('product', 'created_by', 'destination_branch').order_by('-created_at')
+    movements = (
+        InventoryMovement.objects
+        .select_related('product', 'created_by', 'destination_branch')
+        .annotate(
+            has_reconciliation=Exists(RetailerSales.objects.filter(delivery_movement=OuterRef('pk'))),
+            has_pending_recon=Exists(RetailerSales.objects.filter(delivery_movement=OuterRef('pk'), reconciled=False)),
+        )
+        .order_by('-created_at')
+    )
 
     movement_type = request.GET.get('type', '')
     branch_id     = request.GET.get('branch', '')
@@ -366,6 +374,30 @@ def batches_for_product(request):
 
 
 @login_required
+def deliveries_for_loss(request):
+    product_id = request.GET.get('product_id')
+    if not product_id:
+        return JsonResponse({'deliveries': []})
+    qs = (
+        InventoryMovement.objects
+        .filter(product_id=product_id, movement_type='delivery_out')
+        .select_related('product', 'destination_branch')
+        .order_by('-created_at')
+    )
+    result = [
+        {
+            'id': m.pk,
+            'label': (
+                f"{m.reference_no or 'No ref'} → {m.destination_branch or '?'}"
+                f" ({m.quantity} {m.product.unit}, {m.created_at.strftime('%b %d, %Y')})"
+            ),
+        }
+        for m in qs
+    ]
+    return JsonResponse({'deliveries': result})
+
+
+@login_required
 def deliveries_for_product_branch(request):
     product_id = request.GET.get('product_id')
     branch_id = request.GET.get('branch_id')
@@ -471,7 +503,7 @@ def reconciliation_resolve(request, pk):
         return redirect('reconciliation_list')
 
     if request.method == 'POST':
-        form = ReconciliationResolveForm(request.POST, discrepancy=record.discrepancy or 0)
+        form = ReconciliationResolveForm(request.POST, discrepancy=record.discrepancy or 0, internal_delivery_qty=record.internal_delivery_qty)
         if form.is_valid():
             record.resolution_status = form.cleaned_data['resolution_status']
             record.resolution_note = form.cleaned_data['resolution_note']
@@ -508,7 +540,7 @@ def reconciliation_resolve(request, pk):
                 messages.success(request, f'Discrepancy marked as resolved ({record.get_resolution_status_display()}).')
             return redirect('reconciliation_list')
     else:
-        form = ReconciliationResolveForm(discrepancy=record.discrepancy or 0)
+        form = ReconciliationResolveForm(discrepancy=record.discrepancy or 0, internal_delivery_qty=record.internal_delivery_qty)
 
     return render(request, 'inventory/reconciliation_resolve.html', {
         'form': form,
@@ -646,62 +678,6 @@ def reports(request):
     })
 
 
-# ── CSV Exports ───────────────────────────────────────────────────────────────
-
-@login_required
-def export_losses_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="loss_analysis.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Product', 'SKU', 'Total Lost (units)'])
-    rows = (
-        InventoryMovement.objects
-        .filter(movement_type='loss')
-        .values('product__name', 'product__sku')
-        .annotate(total_lost=Sum('quantity'))
-        .order_by('-total_lost')
-    )
-    for row in rows:
-        writer.writerow([row['product__name'], row['product__sku'], row['total_lost']])
-    return response
-
-
-@login_required
-def export_deliveries_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="deliveries_by_branch.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Branch', 'Number of Deliveries', 'Total Quantity'])
-    rows = (
-        InventoryMovement.objects
-        .filter(movement_type='delivery_out')
-        .values('destination_branch__name')
-        .annotate(total_qty=Sum('quantity'), total_movements=Count('id'))
-        .order_by('-total_qty')
-    )
-    for row in rows:
-        writer.writerow([row['destination_branch__name'] or '(unspecified)', row['total_movements'], row['total_qty']])
-    return response
-
-
-@login_required
-def export_back_orders_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="back_orders.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Date', 'Product', 'Quantity', 'Branch', 'Reference', 'Note', 'Recorded By'])
-    back_orders = InventoryMovement.objects.filter(movement_type='back_order').select_related('product', 'created_by').order_by('-created_at')
-    for m in back_orders:
-        writer.writerow([
-            m.created_at.strftime('%Y-%m-%d %H:%M'),
-            m.product.name,
-            m.quantity,
-            m.destination_branch or '',
-            m.reference_no or '',
-            m.note or '',
-            m.created_by.username if m.created_by else '',
-        ])
-    return response
 
 
 # ── Audit Log ─────────────────────────────────────────────────────────────────

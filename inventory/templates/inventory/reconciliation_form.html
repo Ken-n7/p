@@ -13,9 +13,9 @@
                     {% csrf_token %}
 
                     <div class="mb-3">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Link to Delivery <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Delivery</label>
                         <select id="id_delivery_movement" name="delivery_movement" class="form-select" style="font-size:0.855rem;">
-                            <option value="">— Select a delivery to auto-fill (optional) —</option>
+                            <option value="">Select a delivery</option>
                             {% for m in form.delivery_movement.field.queryset %}
                             <option value="{{ m.pk }}" {% if form.delivery_movement.value == m.pk|stringformat:"s" %}selected{% endif %}>
                                 {{ m.reference_no|default:"No ref" }} — {{ m.product.name }} → {{ m.destination_branch|default:"?" }} ({{ m.quantity }} {{ m.product.unit }}, {{ m.created_at|date:"M d, Y" }})

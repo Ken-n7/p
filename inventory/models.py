@@ -111,11 +111,10 @@ class RetailerSales(models.Model):
     """For reconciliation with SM / Savemore"""
 
     RESOLUTION_CHOICES = [
-        ('pending',      'Pending'),
-        ('returned',     'Returned to Warehouse'),
-        ('written_off',  'Written Off'),
-        ('corrected',    'Corrected Entry'),
-        ('over_sold',    'Sales Exceeded Delivery'),
+        ('pending',     'Pending'),
+        ('returned',    'Returned to Warehouse'),
+        ('written_off', 'Written Off'),
+        ('corrected',   'Corrected Entry'),
     ]
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

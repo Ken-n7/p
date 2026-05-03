@@ -17,6 +17,7 @@ urlpatterns = [
     path('batches/', views.batch_list, name='batch_list'),
     path('api/batches-for-product/', views.batches_for_product, name='batches_for_product'),
     path('api/delivery-details/', views.delivery_details, name='delivery_details'),
+    path('api/deliveries-for-loss/', views.deliveries_for_loss, name='deliveries_for_loss'),
     path('api/deliveries-for-product-branch/', views.deliveries_for_product_branch, name='deliveries_for_product_branch'),
     path('api/back-orders-for-product-branch/', views.pending_back_orders_for_product_branch, name='pending_back_orders_for_product_branch'),
 
@@ -35,9 +36,6 @@ urlpatterns = [
 
     # Reports
     path('reports/', views.reports, name='reports'),
-    path('reports/export/losses/', views.export_losses_csv, name='export_losses_csv'),
-    path('reports/export/deliveries/', views.export_deliveries_csv, name='export_deliveries_csv'),
-    path('reports/export/back-orders/', views.export_back_orders_csv, name='export_back_orders_csv'),
 
     # Audit log (admin only)
     path('audit/', views.audit_log, name='audit_log'),

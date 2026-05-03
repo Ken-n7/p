@@ -150,8 +150,8 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
     source_delivery = forms.ModelChoiceField(
         queryset=InventoryMovement.objects.filter(movement_type='delivery_out').order_by('-created_at'),
         required=False,
-        empty_label='— Warehouse loss (no delivery) —',
-        label='Related Delivery (if transit or branch loss)',
+        empty_label='Select a delivery',
+        label='Related Delivery',
     )
 
     class Meta:
@@ -240,9 +240,9 @@ class RetailerSalesForm(forms.ModelForm):
         ).exclude(
             reconciliations__isnull=False
         ).select_related('product', 'destination_branch').order_by('-created_at'),
-        required=False,
-        empty_label='— Select a delivery to auto-fill (optional) —',
-        label='Link to Delivery',
+        required=True,
+        empty_label='Select a delivery',
+        label='Delivery',
     )
     branch = forms.ModelChoiceField(
         queryset=Branch.objects.all(),
@@ -284,16 +284,12 @@ class RetailerSalesForm(forms.ModelForm):
 
 # rest unchanged
 class ReconciliationResolveForm(forms.Form):
-    POSITIVE_CHOICES = [
+    RESOLUTION_CHOICES = [
         ('written_off', 'Written Off — expired or damaged at branch'),
         ('corrected',   'Corrected Entry — counting or recording error'),
     ]
-    NEGATIVE_CHOICES = [
-        ('over_sold',  'Sales Exceeded Delivery — branch sold more than EFP delivered'),
-        ('corrected',  'Corrected Entry — counting or recording error'),
-    ]
 
-    resolution_status = forms.ChoiceField(choices=POSITIVE_CHOICES, label='Resolution Type')
+    resolution_status = forms.ChoiceField(choices=RESOLUTION_CHOICES, label='Resolution Type')
     resolution_note = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
         label='Resolution Note',
@@ -301,26 +297,31 @@ class ReconciliationResolveForm(forms.Form):
     )
     corrected_sold_quantity = forms.IntegerField(
         required=False,
-        min_value=0,
+        min_value=1,
         label='Corrected Sold Quantity',
         help_text='Enter the actual correct quantity sold. A new reconciliation record will be created with this value.',
     )
 
-    def __init__(self, *args, discrepancy=0, **kwargs):
+    def __init__(self, *args, discrepancy=0, internal_delivery_qty=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if discrepancy < 0:
-            self.fields['resolution_status'].choices = self.NEGATIVE_CHOICES
+        self.internal_delivery_qty = internal_delivery_qty
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
 
     def clean(self):
         cleaned_data = super().clean()
         resolution_status = cleaned_data.get('resolution_status')
-        corrected_sold_quantity = cleaned_data.get('corrected_sold_quantity')
-        
-        if resolution_status == 'corrected' and corrected_sold_quantity is None:
-            self.add_error('corrected_sold_quantity', 'Corrected sold quantity is required when selecting Corrected Entry.')
-        
+        corrected_qty = cleaned_data.get('corrected_sold_quantity')
+
+        if resolution_status == 'corrected':
+            if corrected_qty is None:
+                self.add_error('corrected_sold_quantity', 'Corrected sold quantity is required when selecting Corrected Entry.')
+            elif self.internal_delivery_qty and corrected_qty > self.internal_delivery_qty:
+                self.add_error(
+                    'corrected_sold_quantity',
+                    f'Corrected quantity cannot exceed the delivered quantity ({self.internal_delivery_qty}).',
+                )
+
         return cleaned_data
 
 class BranchForm(forms.ModelForm):

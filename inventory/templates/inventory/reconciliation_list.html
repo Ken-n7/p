@@ -136,6 +136,7 @@
                     </th>
                     <th>Status</th>
                     <th></th>
+                    <th>Resolution Note</th>
                 </tr>
             </thead>
             <tbody>
@@ -165,8 +166,6 @@
                             <span class="badge" style="background:#f1f5f9;color:#475569;">Written Off</span>
                         {% elif r.resolution_status == 'corrected' %}
                             <span class="badge" style="background:#f3e8ff;color:#7e22ce;">Corrected</span>
-                        {% elif r.resolution_status == 'over_sold' %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">Over-Sold</span>
                         {% else %}
                             <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
                         {% endif %}
@@ -178,6 +177,13 @@
                                 Resolve
                             </a>
                         {% endif %}
+                    </td>
+                    <td style="color:#94a3b8;font-size:0.8rem;">
+                        {% if r.resolution_note %}
+                            {% if r.resolution_note|length > 40 %}
+                            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-content="{{ r.resolution_note }}" style="cursor:help;border-bottom:1px dashed #cbd5e1;">{{ r.resolution_note|truncatechars:40 }}</span>
+                            {% else %}{{ r.resolution_note }}{% endif %}
+                        {% else %}—{% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -195,8 +201,7 @@
 
 {% block extra_scripts %}
 <script>
-document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-    new bootstrap.Tooltip(el);
-});
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => new bootstrap.Popover(el, { trigger: 'hover focus' }));
 </script>
 {% endblock %}

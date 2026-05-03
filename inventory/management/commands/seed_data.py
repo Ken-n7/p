@@ -64,7 +64,7 @@ RECONCILIATION_DATA = [
     ('VEG-001', 'SM Grand Central', 23, 3, 'written_off', '2 bundles confirmed expired before sale date; noted by SM Grand Central branch manager'),
     ('VEG-001', 'SM Tarlac',        20, 3, None,          ''),
 
-    # Sitaw — pending gap, over-sold (from partial BO delivery)
+    # Sitaw — pending gaps (SM Grand Central short, Savemore Muzon from partial BO delivery)
     ('VEG-003', 'SM Grand Central', 13, 3, None,          ''),
     ('VEG-003', 'Savemore Muzon',   10, 3, None,          ''),
 
