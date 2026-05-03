@@ -180,6 +180,7 @@ def product_detail(request, pk):
     return render(request, 'inventory/product_detail.html', {
         'product': product,
         'movements': movements,
+        'production_batches': production_batches,
         'total_produced': total_produced,
         'total_delivered': total_delivered,
         'total_returned': total_returned,
@@ -216,6 +217,9 @@ def product_edit(request, pk):
 def product_delete(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
+        if product.quantity > 0:
+            messages.error(request, f'Cannot delete product with remaining stock. Current quantity: {product.quantity} {product.unit}.')
+            return redirect('product_detail', pk=product.pk)
         _log(request.user, 'delete', product, f"SKU={product.sku}")
         product.delete()
         messages.success(request, 'Product deleted.')
