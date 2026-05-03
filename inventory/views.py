@@ -502,7 +502,21 @@ def reconciliation_resolve(request, pk):
             record.save()
             _log(request.user, 'update', record,
                  f"resolved_as={record.resolution_status}, note={record.resolution_note}")
-            if status == 'returned' and discrepancy > 0:
+
+            if status == 'corrected':
+                corrected_qty = form.cleaned_data['corrected_sold_quantity']
+                new_record = RetailerSales.objects.create(
+                    product=record.product,
+                    branch=record.branch,
+                    delivery_movement=record.delivery_movement,
+                    sold_quantity=corrected_qty,
+                    sales_date=record.sales_date,
+                    internal_delivery_qty=record.internal_delivery_qty,
+                )
+                _log(request.user, 'create', new_record,
+                     f"auto-created corrected entry from recon #{record.pk}, corrected_qty={corrected_qty}")
+                messages.success(request, f'Record corrected. A new entry with {corrected_qty} {record.product.unit} sold has been created.')
+            elif status == 'returned' and discrepancy > 0:
                 messages.success(request, f'Resolved — {discrepancy} {record.product.unit} returned to stock as a Return In movement.')
             else:
                 messages.success(request, f'Discrepancy marked as resolved ({record.get_resolution_status_display()}).')
@@ -567,13 +581,27 @@ def sales_summary(request):
         .annotate(total_sold=Sum('sold_quantity'))
         .order_by('-total_sold')
     )
+    delivered_by_product = (
+        InventoryMovement.objects
+        .filter(movement_type='delivery_out')
+        .values('product__name', 'product__sku', 'product__unit')
+        .annotate(total_delivered=Sum('quantity'))
+    )
+    delivered_by_branch = (
+        InventoryMovement.objects
+        .filter(movement_type='delivery_out')
+        .values('destination_branch__name')
+        .annotate(total_delivered=Sum('quantity'))
+    )
     grand_total = by_product.aggregate(total=Sum('total_sold'))['total'] or 0
 
     return render(request, 'inventory/sales_summary.html', {
         'by_product': by_product,
         'by_branch': by_branch,
+        'delivered_by_product': delivered_by_product,
+        'delivered_by_branch': delivered_by_branch,
         'grand_total': grand_total,
-        'title': 'Sales Summary',
+        'title': 'Consignment Summary',
     })
 
 
@@ -599,15 +627,33 @@ def reports(request):
         .annotate(total_qty=Sum('quantity'), total_movements=Count('id'))
         .order_by('-total_qty')
     )
+    unreturned_unsold = (
+        RetailerSales.objects
+        .filter(reconciled=True, discrepancy__gt=0)
+        .exclude(resolution_status='returned')
+        .values('product__name', 'product__sku', 'product__unit')
+        .annotate(total_lost=Sum('discrepancy'))
+        .order_by('-total_lost')
+    )
     back_orders = InventoryMovement.objects.filter(movement_type='back_order').select_related('product', 'created_by', 'destination_branch').order_by('-created_at')
     unreconciled = RetailerSales.objects.filter(reconciled=False).count()
     reconciled = RetailerSales.objects.filter(reconciled=True).count()
+    
+    # Add unreturned_unsold total to total_loss_qty
+    unreturned_unsold_total = (
+        RetailerSales.objects
+        .filter(reconciled=True, discrepancy__gt=0)
+        .exclude(resolution_status='returned')
+        .aggregate(total=Sum('discrepancy'))['total'] or 0
+    )
+    total_loss_qty += unreturned_unsold_total
 
     return render(request, 'inventory/reports.html', {
         'title': 'Reports',
         'total_loss_qty': total_loss_qty,
         'product_losses': product_losses,
         'deliveries_by_branch': deliveries_by_branch,
+        'unreturned_unsold': unreturned_unsold,
         'back_orders': back_orders,
         'unreconciled': unreconciled,
         'reconciled': reconciled,

@@ -90,8 +90,21 @@
                                 <span style="color:#94a3b8;font-size:0.78rem;"> {{ row.product__unit }}</span>
                             </td>
                         </tr>
+                        {% endfor %}
+                        {% for row in unreturned_unsold %}
+                        <tr>
+                            <td style="font-weight:500;">{{ row.product__name }}</td>
+                            <td><code>{{ row.product__sku }}</code></td>
+                            <td class="text-end">
+                                <span style="font-weight:700;color:#92400e;">{{ row.total_lost }}</span>
+                                <span style="color:#94a3b8;font-size:0.78rem;"> {{ row.product__unit }}</span>
+                                <span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.65rem;margin-left:4px;">Unsold at Branch</span>
+                            </td>
+                        </tr>
                         {% empty %}
+                        {% if not product_losses %}
                         <tr><td colspan="3" class="text-center py-4" style="color:#94a3b8;">No losses recorded.</td></tr>
+                        {% endif %}
                         {% endfor %}
                     </tbody>
                 </table>

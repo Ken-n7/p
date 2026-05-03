@@ -19,7 +19,7 @@
                         <select id="id_closes_back_order" name="closes_back_order" class="form-control">
                             <option value="">— None (does not close a back order) —</option>
                             {% for bo in form.closes_back_order.field.queryset %}
-                            <option value="{{ bo.pk }}" data-product-id="{{ bo.product_id }}" data-branch-id="{{ bo.destination_branch_id|default:'' }}" {% if form.closes_back_order.value == bo.pk|stringformat:"s" %}selected{% endif %}>{{ bo }}</option>
+                            <option value="{{ bo.pk }}" data-product-id="{{ bo.product_id }}" data-branch-id="{{ bo.destination_branch_id|default:'' }}" {% if form.closes_back_order.value == bo.pk|stringformat:"s" %}selected{% endif %}>{{ bo.product.name }} — {{ bo.quantity }} {{ bo.product.unit }} → {{ bo.destination_branch|default:"?" }} ({{ bo.created_at|date:"M d, Y" }})</option>
                             {% endfor %}
                         </select>
                         <div id="back-order-link-badge" class="mt-1" style="display:none;">

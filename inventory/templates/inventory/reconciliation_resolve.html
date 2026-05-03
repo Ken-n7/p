@@ -56,3 +56,21 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_scripts %}
+<script>
+const resolutionSelect = document.getElementById('id_resolution_status');
+const correctedWrap = document.getElementById('div_id_corrected_sold_quantity');
+
+function toggleCorrected() {
+    if (resolutionSelect.value === 'corrected') {
+        correctedWrap.style.display = '';
+    } else {
+        correctedWrap.style.display = 'none';
+    }
+}
+
+resolutionSelect.addEventListener('change', toggleCorrected);
+toggleCorrected();
+</script>
+{% endblock %}

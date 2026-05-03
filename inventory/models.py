@@ -41,10 +41,10 @@ class Branch(models.Model):
 
 class InventoryMovement(models.Model):
     MOVEMENT_TYPES = [
-        ('production_in', 'Production In'),
-        ('delivery_out', 'Delivery Out'),
-        ('return_in', 'Return In'),
-        ('loss', 'Loss'),
+        ('production_in', 'Received from Production'),
+        ('delivery_out', 'Delivered to Branch'),
+        ('return_in', 'Returned from Branch'),
+        ('loss', 'Stock Loss'),
         ('back_order', 'Back Order'),
     ]
 

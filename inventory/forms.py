@@ -100,6 +100,14 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self._style()
+        self.fields['closes_back_order'].label_from_instance = lambda obj: (
+            f"{obj.product.name} — {obj.quantity} {obj.product.unit}"
+            f" → {obj.destination_branch or '?'} ({obj.created_at.strftime('%b %d, %Y')})"
+        )
+        self.fields['source_batch'].label_from_instance = lambda obj: (
+            f"{obj.batch_number} — exp {obj.expiration_date}"
+            f" ({obj.available_quantity()} {obj.product.unit} available)"
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -214,6 +222,14 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self._style()
         self.fields['loss_location'].required = True
+        self.fields['source_delivery'].label_from_instance = lambda obj: (
+            f"{obj.reference_no or 'No ref'} — {obj.product.name}"
+            f" → {obj.destination_branch or '?'} ({obj.quantity} {obj.product.unit}, {obj.created_at.strftime('%b %d, %Y')})"
+        )
+        self.fields['source_batch'].label_from_instance = lambda obj: (
+            f"{obj.batch_number} — exp {obj.expiration_date}"
+            f" ({obj.available_quantity()} {obj.product.unit} available)"
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -340,6 +356,12 @@ class ReconciliationResolveForm(forms.Form):
         label='Resolution Note',
         help_text='Briefly describe how this discrepancy was resolved.',
     )
+    corrected_sold_quantity = forms.IntegerField(
+        required=False,
+        min_value=0,
+        label='Corrected Sold Quantity',
+        help_text='Enter the actual correct quantity sold. A new reconciliation record will be created with this value.',
+    )
 
     def __init__(self, *args, discrepancy=0, **kwargs):
         super().__init__(*args, **kwargs)
@@ -347,6 +369,16 @@ class ReconciliationResolveForm(forms.Form):
             self.fields['resolution_status'].choices = self.NEGATIVE_CHOICES
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        resolution_status = cleaned_data.get('resolution_status')
+        corrected_sold_quantity = cleaned_data.get('corrected_sold_quantity')
+        
+        if resolution_status == 'corrected' and corrected_sold_quantity is None:
+            self.add_error('corrected_sold_quantity', 'Corrected sold quantity is required when selecting Corrected Entry.')
+        
+        return cleaned_data
 
 class BranchForm(forms.ModelForm):
     class Meta:

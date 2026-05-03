@@ -147,11 +147,15 @@ RETURNS_DATA = [
     ('VEG-006', 'Savemore Muzon',         3, 'RT-2504-VEG006-MUZ', 'Branch requested pullback — low foot traffic this week'),
 ]
 
-# (sku, branch_name, qty, note)
+# (sku, branch_name, qty, note, back_order_status)
 BACK_ORDERS_DATA = [
-    ('VEG-003', 'Savemore Apalit',  18, 'Branch requested 18 bundles of Sitaw; stock already committed to other branches this cycle'),
-    ('VEG-010', 'SM Telabastagan',  12, 'Kamatis harvest volume insufficient for additional delivery — next batch in 3 days'),
-    ('VEG-012', 'Savemore Apalit',  15, 'Labanos back order logged; branch confirmed they will wait for next dispatch'),
+    ('VEG-003', 'Savemore Apalit',  18, 'Branch requested 18 bundles of Sitaw; stock already committed to other branches this cycle', 'pending'),
+    ('VEG-010', 'SM Telabastagan',  12, 'Kamatis harvest volume insufficient for additional delivery — next batch in 3 days', 'pending'),
+    ('VEG-012', 'Savemore Apalit',  15, 'Labanos back order logged; branch confirmed they will wait for next dispatch', 'pending'),
+    # Partial fulfillment scenario: initial back order of 20 units
+    ('VEG-004', 'Savemore Apalit',  20, 'Initial back order — branch requested 20 pcs of Kalabasa', 'fulfilled'),
+    # Partial delivery that closed first back order but only delivered 12 units, creating new back order for remaining 8
+    ('VEG-004', 'Savemore Apalit',   8, 'Remaining unfulfilled from initial 20-unit back order; next delivery expected', 'pending'),
 ]
 
 # (sku, branch_name, days_ago, sold_qty, delivery_qty, resolution_status, resolution_note)
@@ -203,6 +207,15 @@ RECONCILIATION_DATA = [
     # Labanos
     ('VEG-012', 'SM Grand Central',      3, 23, 25, None,          ''),
     ('VEG-012', 'SM Tarlac',             3, 20, 20, None,          ''),
+
+    # Over-sold scenarios (negative discrepancy — sold > delivered)
+    ('VEG-005', 'Savemore Apalit',       5, 32, 30, 'over_sold',   'Branch re-count showed 32 sold; original count 30 — demand exceeded initial supply'),
+    ('VEG-009', 'Savemore Apalit',       5, 24, 20, 'over_sold',   'Branch sold 4 more units than delivered; inventory miscalculation at branch'),
+
+    # Additional written-off scenarios (positive discrepancy — sold < delivered)
+    ('VEG-003', 'SM Tarlac',             5, 15, 18, 'written_off', '3 bundles expired before sale — not sellable'),
+    ('VEG-006', 'Savemore Apalit',       6, 12, 15, 'written_off', '3 bundles wilted during cold storage — damaged goods'),
+    ('VEG-010', 'Savemore Muzon',        5, 8, 12,  'written_off', '4 units bruised from improper handling at branch'),
 ]
 
 
@@ -357,7 +370,7 @@ class Command(BaseCommand):
 
         # ── Back Orders ───────────────────────────────────────────────
         self.stdout.write('Recording back orders...')
-        for sku, branch_name, qty, note in BACK_ORDERS_DATA:
+        for sku, branch_name, qty, note, back_order_status in BACK_ORDERS_DATA:
             prod   = products[sku]
             branch = branches[branch_name]
             mv = InventoryMovement.objects.create(
@@ -367,10 +380,10 @@ class Command(BaseCommand):
                 destination_branch=branch,
                 note=note,
                 created_by=sales,
-                back_order_status='pending',
+                back_order_status=back_order_status,
             )
             _log(sales, 'create', mv,
-                 f"type=back_order, qty={qty}, product={prod}, branch={branch_name}")
+                 f"type=back_order, qty={qty}, product={prod}, branch={branch_name}, status={back_order_status}")
 
         # ── Reconciliation ────────────────────────────────────────────
         self.stdout.write('Recording reconciliation data...')
