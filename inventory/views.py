@@ -482,23 +482,7 @@ def reconciliation_resolve(request, pk):
                 if record.delivery_movement else None
             )
 
-            if status == 'returned' and discrepancy > 0:
-                mv = InventoryMovement.objects.create(
-                    product=record.product,
-                    movement_type='return_in',
-                    quantity=discrepancy,
-                    destination_branch=record.branch,
-                    note=(
-                        f"Auto-created on reconciliation resolve — "
-                        f"{discrepancy} {record.product.unit} returned from {record.branch}"
-                    ),
-                    source_batch=source_batch,
-                    created_by=request.user,
-                )
-                _log(request.user, 'create', mv,
-                     f"type=return_in, qty={discrepancy}, product={record.product}, auto from recon #{record.pk}")
-
-            # written_off, corrected, over_sold: no stock movement
+            # no stock movement for any resolution — goods are gone once delivered
             record.save()
             _log(request.user, 'update', record,
                  f"resolved_as={record.resolution_status}, note={record.resolution_note}")
@@ -516,8 +500,6 @@ def reconciliation_resolve(request, pk):
                 _log(request.user, 'create', new_record,
                      f"auto-created corrected entry from recon #{record.pk}, corrected_qty={corrected_qty}")
                 messages.success(request, f'Record corrected. A new entry with {corrected_qty} {record.product.unit} sold has been created.')
-            elif status == 'returned' and discrepancy > 0:
-                messages.success(request, f'Resolved — {discrepancy} {record.product.unit} returned to stock as a Return In movement.')
             else:
                 messages.success(request, f'Discrepancy marked as resolved ({record.get_resolution_status_display()}).')
             return redirect('reconciliation_list')

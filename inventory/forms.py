@@ -139,62 +139,6 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         return cleaned_data
 
 
-class ReturnInForm(_MovementFormMixin, forms.ModelForm):
-    destination_branch = forms.ModelChoiceField(
-        queryset=Branch.objects.all(),
-        empty_label='Select a branch',
-        label='Branch',
-    )
-    source_delivery = forms.ModelChoiceField(
-        queryset=InventoryMovement.objects.filter(movement_type='delivery_out').order_by('-created_at'),
-        required=True,
-        empty_label='Select the original delivery',
-        label='Original Delivery',
-    )
-
-    class Meta:
-        model = InventoryMovement
-        fields = ['source_delivery', 'product', 'destination_branch', 'quantity', 'reference_no', 'note']
-        widgets = {
-            'note': forms.Textarea(attrs={'rows': 3}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        self._style()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        product = cleaned_data.get('product')
-        branch = cleaned_data.get('destination_branch')
-        source_delivery = cleaned_data.get('source_delivery')
-        quantity = cleaned_data.get('quantity')
-        ref = cleaned_data.get('reference_no', '').strip()
-
-        if not branch:
-            self.add_error('destination_branch', 'A branch is required.')
-        if not ref:
-            self.add_error('reference_no', 'A reference number is required for returns.')
-        if not source_delivery:
-            self.add_error('source_delivery', 'The original delivery must be selected.')
-        if quantity is not None and quantity == 0:
-            self.add_error('quantity', 'Quantity must be greater than zero.')
-        if source_delivery and product and source_delivery.product != product:
-            self.add_error('source_delivery', 'Selected delivery is for a different product.')
-        if source_delivery and branch and source_delivery.destination_branch != branch:
-            self.add_error('source_delivery', 'Selected delivery did not go to this branch.')
-        if source_delivery and quantity:
-            from django.db.models import Sum
-            already_returned = InventoryMovement.objects.filter(
-                source_delivery=source_delivery,
-                movement_type='return_in',
-            ).aggregate(total=Sum('quantity'))['total'] or 0
-            returnable = source_delivery.quantity - already_returned
-            if quantity > returnable:
-                self.add_error('quantity', f"Cannot return {quantity} — only {returnable} returnable from this delivery.")
-        return cleaned_data
-
 
 class LossForm(_MovementFormMixin, forms.ModelForm):
     source_batch = forms.ModelChoiceField(
@@ -341,7 +285,6 @@ class RetailerSalesForm(forms.ModelForm):
 # rest unchanged
 class ReconciliationResolveForm(forms.Form):
     POSITIVE_CHOICES = [
-        ('returned',    'Returned to Warehouse — goods were physically sent back'),
         ('written_off', 'Written Off — expired or damaged at branch'),
         ('corrected',   'Corrected Entry — counting or recording error'),
     ]

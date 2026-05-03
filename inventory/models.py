@@ -41,15 +41,15 @@ class Branch(models.Model):
 
 class InventoryMovement(models.Model):
     MOVEMENT_TYPES = [
-        ('production_in', 'Received from Production'),
-        ('delivery_out', 'Delivered to Branch'),
-        ('return_in', 'Returned from Branch'),
+        ('production_in', 'Production In'),
+        ('delivery_out', 'Delivery Out'),
+        ('return_in', 'Return In'),
         ('loss', 'Stock Loss'),
         ('back_order', 'Back Order'),
     ]
 
     # Types that increase stock vs decrease stock
-    INBOUND_TYPES = {'production_in', 'return_in'}
+    INBOUND_TYPES = {'production_in'}
     OUTBOUND_TYPES = {'delivery_out', 'loss'}
     # back_order is recorded but does not affect current stock level
 
