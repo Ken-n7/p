@@ -1,17 +1,21 @@
-import csv
+from functools import wraps
+
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth import login, logout, update_session_auth_hash
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Sum, Count, Exists, OuterRef
+from django.forms import ModelChoiceField
 
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
 from .forms import (
     ProductForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm,
     ProductionInForm, DeliveryOutForm, LossForm, BackOrderForm,
+    UserCreateForm, UserEditForm, ProfileForm,
 )
 
 
@@ -31,19 +35,23 @@ _MOVEMENT_FORMS = {
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _is_admin(user):
-    if user.is_superuser:
-        return True
-    profile = getattr(user, 'profile', None)
-    return profile and profile.role == 'admin'
-
-
 def _has_role(user, *roles):
-    """Return True if user is superuser or has one of the given roles."""
     if user.is_superuser:
         return True
     profile = getattr(user, 'profile', None)
     return profile and profile.role in roles
+
+
+def require_role(*roles):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not _has_role(request.user, *roles):
+                messages.error(request, 'Access denied.')
+                return redirect('dashboard')
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def _log(user, action, obj, changes=''):
@@ -57,11 +65,32 @@ def _log(user, action, obj, changes=''):
     )
 
 
+def _handle_back_order_fulfillment(movement, user):
+    """Mark back order fulfilled; create remainder BO if partial. Returns remainder qty or None."""
+    bo = movement.closes_back_order
+    bo.back_order_status = 'fulfilled'
+    bo.save(update_fields=['back_order_status'])
+    if movement.quantity >= bo.quantity:
+        return None
+    remainder = bo.quantity - movement.quantity
+    new_bo = InventoryMovement(
+        product=bo.product,
+        movement_type='back_order',
+        quantity=remainder,
+        destination_branch=bo.destination_branch,
+        back_order_status='pending',
+        note=f"Remainder from partial fulfillment of back order #{bo.pk} — originally {bo.quantity} {bo.product.unit}, delivered {movement.quantity}",
+        created_by=user,
+    )
+    new_bo.save()
+    _log(user, 'create', new_bo, f"type=back_order, qty={new_bo.quantity}, product={new_bo.product}")
+    return remainder
+
+
 def _diff(form):
     """Return a readable string of changed fields for an edit form."""
     if not form.changed_data:
         return ''
-    from django.forms import ModelChoiceField
     parts = []
     for field in form.changed_data:
         old = form.initial.get(field, '—')
@@ -188,7 +217,7 @@ def product_detail(request, pk):
         'can_see_recon': can_see_recon,
         'sales': sales,
         'total_sold': total_sold,
-        'is_admin': _is_admin(request.user),
+        'is_admin': _has_role(request.user, 'admin'),
         'today': timezone.now().date(),
         'seven_days': timezone.now().date() + timezone.timedelta(days=7),
         'title': product.name,
@@ -272,11 +301,8 @@ def movement_list(request):
 
 
 @login_required
+@require_role('admin', 'warehouse', 'sales')
 def movement_create(request):
-    if not _has_role(request.user, 'admin', 'warehouse', 'sales'):
-        messages.error(request, 'Access denied.')
-        return redirect('movement_list')
-
     movement_type = request.POST.get('movement_type') or request.GET.get('type', '')
 
     if not movement_type:
@@ -300,27 +326,12 @@ def movement_create(request):
             movement.created_by = request.user
             if movement_type == 'back_order':
                 movement.back_order_status = 'pending'
-            if movement_type == 'return_in' and movement.source_delivery:
-                movement.source_batch = movement.source_delivery.source_batch
             movement.save()
             if movement_type == 'delivery_out' and movement.closes_back_order:
-                bo = movement.closes_back_order
-                bo.back_order_status = 'fulfilled'
-                bo.save(update_fields=['back_order_status'])
-                if movement.quantity < bo.quantity:
-                    remainder = bo.quantity - movement.quantity
-                    new_bo = InventoryMovement(
-                        product=bo.product,
-                        movement_type='back_order',
-                        quantity=remainder,
-                        destination_branch=bo.destination_branch,
-                        back_order_status='pending',
-                        note=f"Remainder from partial fulfillment of back order #{bo.pk} — originally {bo.quantity} {bo.product.unit}, delivered {movement.quantity}",
-                        created_by=request.user,
-                    )
-                    new_bo.save()
-                    _log(request.user, 'create', new_bo, f"type=back_order, qty={new_bo.quantity}, product={new_bo.product}")
-                    messages.warning(request, f"Partial delivery: {movement.quantity} of {bo.quantity} delivered. A new back order for the remaining {remainder} has been created automatically.")
+                bo_qty = movement.closes_back_order.quantity
+                remainder = _handle_back_order_fulfillment(movement, request.user)
+                if remainder:
+                    messages.warning(request, f"Partial delivery: {movement.quantity} of {bo_qty} delivered. A new back order for the remaining {remainder} has been created automatically.")
             _log(request.user, 'create', movement, f"type={movement_type}, qty={movement.quantity}, product={movement.product}")
             messages.success(request, 'Movement recorded.')
             return redirect('movement_list')
@@ -331,11 +342,8 @@ def movement_create(request):
 
 
 @login_required
+@require_role('admin', 'warehouse')
 def batch_list(request):
-    if not _has_role(request.user, 'admin', 'warehouse'):
-        messages.error(request, 'Access denied. Batch records are for admin and warehouse roles only.')
-        return redirect('dashboard')
-
     batches = (
         InventoryMovement.objects
         .filter(movement_type='production_in')
@@ -349,7 +357,6 @@ def batch_list(request):
         'seven_days': timezone.now().date() + timezone.timedelta(days=7),
         'title': 'Batches',
     })
-
 
 
 @login_required
@@ -398,36 +405,6 @@ def deliveries_for_loss(request):
 
 
 @login_required
-def deliveries_for_product_branch(request):
-    product_id = request.GET.get('product_id')
-    branch_id = request.GET.get('branch_id')
-    if not product_id:
-        return JsonResponse({'deliveries': []})
-    qs = InventoryMovement.objects.filter(product_id=product_id, movement_type='delivery_out')
-    if branch_id:
-        qs = qs.filter(destination_branch_id=branch_id)
-    qs = qs.select_related('product').order_by('-created_at')
-    result = []
-    for m in qs:
-        already_returned = InventoryMovement.objects.filter(source_delivery=m, movement_type='return_in').aggregate(total=Sum('quantity'))['total'] or 0
-        returnable = m.quantity - already_returned
-        if returnable > 0:
-            result.append({'id': m.pk, 'label': f"{m.reference_no or 'No ref'} — {m.quantity} {m.product.unit} delivered, {returnable} returnable ({m.created_at.strftime('%b %d, %Y')})"})
-    return JsonResponse({'deliveries': result})
-
-
-@login_required
-def pending_back_orders_for_product_branch(request):
-    product_id = request.GET.get('product_id')
-    branch_id = request.GET.get('branch_id')
-    if not product_id or not branch_id:
-        return JsonResponse({'back_orders': []})
-    qs = InventoryMovement.objects.filter(product_id=product_id, movement_type='back_order', back_order_status='pending', destination_branch_id=branch_id).select_related('product').order_by('-created_at')
-    result = [{'id': m.pk, 'label': f"{m.quantity} {m.product.unit} — {m.created_at.strftime('%b %d, %Y')} ({m.note[:40] if m.note else 'no note'})"} for m in qs]
-    return JsonResponse({'back_orders': result})
-
-
-@login_required
 def delivery_details(request):
     movement_id = request.GET.get('movement_id')
     if not movement_id:
@@ -451,11 +428,8 @@ def delivery_details(request):
 # ── Reconciliation ────────────────────────────────────────────────────────────
 
 @login_required
+@require_role('admin', 'accountant')
 def reconciliation_list(request):
-    if not _has_role(request.user, 'admin', 'accountant'):
-        messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
-        return redirect('dashboard')
-
     reconciliations = RetailerSales.objects.select_related('product', 'branch').order_by('-sales_date')
 
     branch_id  = request.GET.get('branch', '')
@@ -491,11 +465,8 @@ def reconciliation_list(request):
 
 
 @login_required
+@require_role('admin', 'accountant')
 def reconciliation_resolve(request, pk):
-    if not _has_role(request.user, 'admin', 'accountant'):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     record = get_object_or_404(RetailerSales, pk=pk)
 
     if record.reconciled or record.resolution_status != 'pending':
@@ -503,7 +474,7 @@ def reconciliation_resolve(request, pk):
         return redirect('reconciliation_list')
 
     if request.method == 'POST':
-        form = ReconciliationResolveForm(request.POST, discrepancy=record.discrepancy or 0, internal_delivery_qty=record.internal_delivery_qty)
+        form = ReconciliationResolveForm(request.POST, internal_delivery_qty=record.internal_delivery_qty)
         if form.is_valid():
             record.resolution_status = form.cleaned_data['resolution_status']
             record.resolution_note = form.cleaned_data['resolution_note']
@@ -512,11 +483,6 @@ def reconciliation_resolve(request, pk):
             record.reconciled = True
 
             status = form.cleaned_data['resolution_status']
-            discrepancy = record.discrepancy or 0
-            source_batch = (
-                record.delivery_movement.source_batch
-                if record.delivery_movement else None
-            )
 
             # no stock movement for any resolution — goods are gone once delivered
             record.save()
@@ -540,7 +506,7 @@ def reconciliation_resolve(request, pk):
                 messages.success(request, f'Discrepancy marked as resolved ({record.get_resolution_status_display()}).')
             return redirect('reconciliation_list')
     else:
-        form = ReconciliationResolveForm(discrepancy=record.discrepancy or 0, internal_delivery_qty=record.internal_delivery_qty)
+        form = ReconciliationResolveForm(internal_delivery_qty=record.internal_delivery_qty)
 
     return render(request, 'inventory/reconciliation_resolve.html', {
         'form': form,
@@ -551,29 +517,23 @@ def reconciliation_resolve(request, pk):
 
 
 @login_required
+@require_role('admin', 'accountant')
 def reconciliation_add(request):
-    if not _has_role(request.user, 'admin', 'accountant'):
-        messages.error(request, 'Access denied. Reconciliation is for admin and accountant roles only.')
-        return redirect('dashboard')
     if request.method == 'POST':
         form = RetailerSalesForm(request.POST)
         if form.is_valid():
-            if request.POST.get('confirmed') == '1':
-                record = form.save()
-                _log(request.user, 'create', record,
-                     f"branch={record.branch}, product={record.product}, sold={record.sold_quantity}, "
-                     f"delivery={record.internal_delivery_qty}, discrepancy={record.discrepancy}")
-                messages.success(request, 'Retailer sales data added.')
-                return redirect('reconciliation_list')
-            else:
+            if request.POST.get('confirmed') != '1':
                 cd = form.cleaned_data
                 discrepancy = (cd['internal_delivery_qty'] - cd['sold_quantity']) if cd.get('internal_delivery_qty') else None
                 return render(request, 'inventory/reconciliation_confirm.html', {
-                    'form': form,
-                    'cd': cd,
-                    'discrepancy': discrepancy,
-                    'title': 'Confirm Sales Data',
+                    'form': form, 'cd': cd, 'discrepancy': discrepancy, 'title': 'Confirm Sales Data',
                 })
+            record = form.save()
+            _log(request.user, 'create', record,
+                 f"branch={record.branch}, product={record.product}, sold={record.sold_quantity}, "
+                 f"delivery={record.internal_delivery_qty}, discrepancy={record.discrepancy}")
+            messages.success(request, 'Retailer sales data added.')
+            return redirect('reconciliation_list')
     else:
         form = RetailerSalesForm()
     return render(request, 'inventory/reconciliation_form.html', {'form': form, 'title': 'Add Retailer Sales'})
@@ -582,11 +542,8 @@ def reconciliation_add(request):
 # ── Sales Summary ─────────────────────────────────────────────────────────────
 
 @login_required
+@require_role('admin', 'accountant')
 def sales_summary(request):
-    if not _has_role(request.user, 'admin', 'accountant'):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     by_product = (
         RetailerSales.objects
         .values('product__name', 'product__sku', 'product__unit')
@@ -657,14 +614,7 @@ def reports(request):
     unreconciled = RetailerSales.objects.filter(reconciled=False).count()
     reconciled = RetailerSales.objects.filter(reconciled=True).count()
     
-    # Add unreturned_unsold total to total_loss_qty
-    unreturned_unsold_total = (
-        RetailerSales.objects
-        .filter(reconciled=True, discrepancy__gt=0)
-        .exclude(resolution_status='returned')
-        .aggregate(total=Sum('discrepancy'))['total'] or 0
-    )
-    total_loss_qty += unreturned_unsold_total
+    total_loss_qty += unreturned_unsold.aggregate(total=Sum('total_lost'))['total'] or 0
 
     return render(request, 'inventory/reports.html', {
         'title': 'Reports',
@@ -678,16 +628,11 @@ def reports(request):
     })
 
 
-
-
 # ── Audit Log ─────────────────────────────────────────────────────────────────
 
 @login_required
+@require_role('admin')
 def audit_log(request):
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     logs = AuditLog.objects.select_related('user').order_by('-timestamp')
 
     action_filter = request.GET.get('action', '')
@@ -718,23 +663,15 @@ def audit_log(request):
 # ── User Management (admin only) ──────────────────────────────────────────────
 
 @login_required
+@require_role('admin')
 def user_management(request):
-    from django.contrib.auth.models import User
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     users = User.objects.select_related('profile').all()
     return render(request, 'inventory/user_management.html', {'users': users, 'title': 'User Management'})
 
 
 @login_required
+@require_role('admin')
 def user_create(request):
-    from .forms import UserCreateForm
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     if request.method == 'POST':
         form = UserCreateForm(request.POST)
         if form.is_valid():
@@ -749,13 +686,8 @@ def user_create(request):
 
 
 @login_required
+@require_role('admin')
 def user_edit(request, pk):
-    from django.contrib.auth.models import User
-    from .forms import UserEditForm
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
         form = UserEditForm(request.POST, instance=target_user)
@@ -773,12 +705,8 @@ def user_edit(request, pk):
 
 
 @login_required
+@require_role('admin')
 def user_deactivate(request, pk):
-    from django.contrib.auth.models import User
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
 
     if target_user == request.user:
@@ -803,12 +731,8 @@ def user_deactivate(request, pk):
 
 
 @login_required
+@require_role('admin')
 def user_delete(request, pk):
-    from django.contrib.auth.models import User
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('dashboard')
-
     target_user = get_object_or_404(User, pk=pk)
 
     if target_user == request.user:
@@ -839,15 +763,13 @@ def branch_list(request):
     return render(request, 'inventory/branch_list.html', {
         'branches': branches,
         'title': 'Branches',
-        'is_admin': _is_admin(request.user),
+        'is_admin': _has_role(request.user, 'admin'),
     })
 
 
 @login_required
+@require_role('admin')
 def branch_create(request):
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('branch_list')
     if request.method == 'POST':
         form = BranchForm(request.POST)
         if form.is_valid():
@@ -861,10 +783,8 @@ def branch_create(request):
 
 
 @login_required
+@require_role('admin')
 def branch_edit(request, pk):
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('branch_list')
     branch = get_object_or_404(Branch, pk=pk)
     if request.method == 'POST':
         form = BranchForm(request.POST, instance=branch)
@@ -882,10 +802,8 @@ def branch_edit(request, pk):
 
 
 @login_required
+@require_role('admin')
 def branch_delete(request, pk):
-    if not _is_admin(request.user):
-        messages.error(request, 'Access denied.')
-        return redirect('branch_list')
     branch = get_object_or_404(Branch, pk=pk)
     if request.method == 'POST':
         _log(request.user, 'delete', branch, f"name={branch.name}")
@@ -927,7 +845,7 @@ def branch_detail(request, pk):
         'sales': sales,
         'total_sold': total_sold,
         'total_discrepancy': total_discrepancy,
-        'is_admin': _is_admin(request.user),
+        'is_admin': _has_role(request.user, 'admin'),
         'title': branch.name,
     })
 
@@ -936,9 +854,6 @@ def branch_detail(request, pk):
 
 @login_required
 def user_profile(request):
-    from .forms import ProfileForm
-    from django.contrib.auth.forms import PasswordChangeForm
-
     def _styled(form):
         for f in form.fields.values():
             f.widget.attrs.setdefault('class', 'form-control')

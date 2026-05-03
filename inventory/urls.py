@@ -18,8 +18,6 @@ urlpatterns = [
     path('api/batches-for-product/', views.batches_for_product, name='batches_for_product'),
     path('api/delivery-details/', views.delivery_details, name='delivery_details'),
     path('api/deliveries-for-loss/', views.deliveries_for_loss, name='deliveries_for_loss'),
-    path('api/deliveries-for-product-branch/', views.deliveries_for_product_branch, name='deliveries_for_product_branch'),
-    path('api/back-orders-for-product-branch/', views.pending_back_orders_for_product_branch, name='pending_back_orders_for_product_branch'),
 
     # Reconciliation
     path('reconciliation/', views.reconciliation_list, name='reconciliation_list'),

@@ -19,15 +19,6 @@ class ProductForm(forms.ModelForm):
 
 
 class _MovementFormMixin:
-    def _can_override(self):
-        user = getattr(self, 'user', None)
-        if not user:
-            return False
-        if user.is_superuser:
-            return True
-        profile = getattr(user, 'profile', None)
-        return profile and profile.role in ('admin', 'accountant')
-
     def _style(self):
         for field in self.fields.values():
             widget = field.widget
@@ -137,7 +128,6 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         if closes_bo and branch and closes_bo.destination_branch != branch:
             self.add_error('closes_back_order', 'Selected back order is for a different branch.')
         return cleaned_data
-
 
 
 class LossForm(_MovementFormMixin, forms.ModelForm):
@@ -282,7 +272,7 @@ class RetailerSalesForm(forms.ModelForm):
 
         return cleaned_data
 
-# rest unchanged
+
 class ReconciliationResolveForm(forms.Form):
     RESOLUTION_CHOICES = [
         ('written_off', 'Written Off — expired or damaged at branch'),
@@ -302,7 +292,7 @@ class ReconciliationResolveForm(forms.Form):
         help_text='Enter the actual correct quantity sold. A new reconciliation record will be created with this value.',
     )
 
-    def __init__(self, *args, discrepancy=0, internal_delivery_qty=None, **kwargs):
+    def __init__(self, *args, internal_delivery_qty=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.internal_delivery_qty = internal_delivery_qty
         for field in self.fields.values():
@@ -324,35 +314,55 @@ class ReconciliationResolveForm(forms.Form):
 
         return cleaned_data
 
+def _save_user_profile(user, role):
+    UserProfile.objects.update_or_create(user=user, defaults={'role': role})
+
+
 class BranchForm(forms.ModelForm):
     class Meta:
         model = Branch
         fields = ['name', 'address']
+
+
 class UserCreateForm(UserCreationForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2', 'role']
+
     def save(self, commit=True):
         user = super().save(commit=commit)
-        if commit: UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
+        if commit:
+            _save_user_profile(user, self.cleaned_data['role'])
         return user
+
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values(): field.widget.attrs.setdefault('class', 'form-control')
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+
 class UserEditForm(forms.ModelForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
+
     class Meta:
         model = User
         fields = ['username', 'first_name', 'last_name', 'email', 'role']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and hasattr(self.instance, 'profile'): self.fields['role'].initial = self.instance.profile.role
+        if self.instance and hasattr(self.instance, 'profile'):
+            self.fields['role'].initial = self.instance.profile.role
+
     def save(self, commit=True):
         user = super().save(commit=commit)
-        if commit: UserProfile.objects.update_or_create(user=user, defaults={'role': self.cleaned_data['role']})
+        if commit:
+            _save_user_profile(user, self.cleaned_data['role'])
         return user

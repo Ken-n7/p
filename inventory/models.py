@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Sum
 from django.utils import timezone
 
 
@@ -94,7 +95,6 @@ class InventoryMovement(models.Model):
     def available_quantity(self):
         if self.movement_type != 'production_in':
             return None
-        from django.db.models import Sum
         deducted = self.deductions.filter(
             movement_type__in=['delivery_out', 'loss']
         ).aggregate(total=Sum('quantity'))['total'] or 0
