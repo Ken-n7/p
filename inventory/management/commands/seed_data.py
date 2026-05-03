@@ -28,199 +28,81 @@ BRANCH_DATA = [
 
 # (name, sku, category, unit_price, unit)
 PRODUCTS_DATA = [
-    ('Kangkong',      'VEG-001', 'Leafy Vegetables', 28.00, 'bundle'),
-    ('Pechay',        'VEG-002', 'Leafy Vegetables', 35.00, 'bundle'),
-    ('Sitaw',         'VEG-003', 'Pod Vegetables',   52.00, 'bundle'),
-    ('Ampalaya',      'VEG-004', 'Gourd Vegetables', 45.00, 'kg'),
-    ('Kamote Tops',   'VEG-005', 'Leafy Vegetables', 22.00, 'bundle'),
-    ('Malunggay',     'VEG-006', 'Leafy Vegetables', 30.00, 'bundle'),
-    ('Okra',          'VEG-007', 'Pod Vegetables',   58.00, 'kg'),
-    ('Talong',        'VEG-008', 'Fruit Vegetables', 42.00, 'pcs'),
-    ('Kalabasa',      'VEG-009', 'Gourd Vegetables', 38.00, 'pcs'),
-    ('Kamatis',       'VEG-010', 'Fruit Vegetables', 65.00, 'kg'),
-    ('Sibuyas Dahon', 'VEG-011', 'Leafy Vegetables', 48.00, 'bundle'),
-    ('Labanos',       'VEG-012', 'Root Vegetables',  32.00, 'pcs'),
+    ('Kangkong',    'VEG-001', 'Leafy Vegetables', 28.00, 'bundle'),
+    ('Pechay',      'VEG-002', 'Leafy Vegetables', 35.00, 'bundle'),
+    ('Sitaw',       'VEG-003', 'Pod Vegetables',   52.00, 'bundle'),
+    ('Ampalaya',    'VEG-004', 'Gourd Vegetables', 45.00, 'kg'),
+    ('Kamote Tops', 'VEG-005', 'Leafy Vegetables', 22.00, 'bundle'),
 ]
 
-# (sku, production_qty, batch_number, reference_no)
-# Production date: today-5, expiry: today+9 (14-day shelf life for fresh produce)
+# (sku, production_qty, batch_number)
 PRODUCTION_DATA = [
-    ('VEG-001', 180, 'BATCH-VEG001-2504', 'PROD-VEG001-2504-01'),
-    ('VEG-002', 160, 'BATCH-VEG002-2504', 'PROD-VEG002-2504-01'),
-    ('VEG-003', 140, 'BATCH-VEG003-2504', 'PROD-VEG003-2504-01'),
-    ('VEG-004', 130, 'BATCH-VEG004-2504', 'PROD-VEG004-2504-01'),
-    ('VEG-005', 200, 'BATCH-VEG005-2504', 'PROD-VEG005-2504-01'),
-    ('VEG-006', 150, 'BATCH-VEG006-2504', 'PROD-VEG006-2504-01'),
-    ('VEG-007', 120, 'BATCH-VEG007-2504', 'PROD-VEG007-2504-01'),
-    ('VEG-008', 170, 'BATCH-VEG008-2504', 'PROD-VEG008-2504-01'),
-    ('VEG-009', 220, 'BATCH-VEG009-2504', 'PROD-VEG009-2504-01'),
-    ('VEG-010', 110, 'BATCH-VEG010-2504', 'PROD-VEG010-2504-01'),
-    ('VEG-011', 190, 'BATCH-VEG011-2504', 'PROD-VEG011-2504-01'),
-    ('VEG-012', 160, 'BATCH-VEG012-2504', 'PROD-VEG012-2504-01'),
+    ('VEG-001', 120, 'BATCH-VEG001-2504'),
+    ('VEG-002', 100, 'BATCH-VEG002-2504'),
+    ('VEG-003',  80, 'BATCH-VEG003-2504'),
+    ('VEG-004',  90, 'BATCH-VEG004-2504'),
+    ('VEG-005', 150, 'BATCH-VEG005-2504'),
 ]
 
 # (sku, branch_name, qty, reference_no)
+# VEG-003 Savemore Apalit delivery is created separately as part of the back order partial scenario
 DELIVERIES_DATA = [
     ('VEG-001', 'SM Grand Central',      30, 'DR-2504-VEG001-SMG'),
-    ('VEG-001', 'SM San Jose Del Monte', 25, 'DR-2504-VEG001-SJS'),
-    ('VEG-001', 'Savemore Muzon',        20, 'DR-2504-VEG001-MUZ'),
     ('VEG-001', 'SM Tarlac',             25, 'DR-2504-VEG001-TAR'),
-    ('VEG-001', 'SM Telabastagan',       20, 'DR-2504-VEG001-TEL'),
-    ('VEG-001', 'Savemore Apalit',       15, 'DR-2504-VEG001-APL'),
+    ('VEG-001', 'Savemore Muzon',        20, 'DR-2504-VEG001-MUZ'),
 
     ('VEG-002', 'SM Grand Central',      25, 'DR-2504-VEG002-SMG'),
     ('VEG-002', 'SM San Jose Del Monte', 20, 'DR-2504-VEG002-SJS'),
-    ('VEG-002', 'Savemore Muzon',        20, 'DR-2504-VEG002-MUZ'),
-    ('VEG-002', 'SM Tarlac',             20, 'DR-2504-VEG002-TAR'),
     ('VEG-002', 'SM Telabastagan',       15, 'DR-2504-VEG002-TEL'),
 
     ('VEG-003', 'SM Grand Central',      20, 'DR-2504-VEG003-SMG'),
-    ('VEG-003', 'SM San Jose Del Monte', 20, 'DR-2504-VEG003-SJS'),
-    ('VEG-003', 'Savemore Muzon',        15, 'DR-2504-VEG003-MUZ'),
-    ('VEG-003', 'SM Tarlac',             20, 'DR-2504-VEG003-TAR'),
+    ('VEG-003', 'SM Tarlac',             18, 'DR-2504-VEG003-TAR'),
 
     ('VEG-004', 'SM Grand Central',      20, 'DR-2504-VEG004-SMG'),
     ('VEG-004', 'SM Tarlac',             15, 'DR-2504-VEG004-TAR'),
-    ('VEG-004', 'SM Telabastagan',       20, 'DR-2504-VEG004-TEL'),
-    ('VEG-004', 'Savemore Apalit',       15, 'DR-2504-VEG004-APL'),
 
     ('VEG-005', 'SM Grand Central',      30, 'DR-2504-VEG005-SMG'),
-    ('VEG-005', 'SM San Jose Del Monte', 30, 'DR-2504-VEG005-SJS'),
-    ('VEG-005', 'Savemore Muzon',        25, 'DR-2504-VEG005-MUZ'),
-    ('VEG-005', 'SM Tarlac',             30, 'DR-2504-VEG005-TAR'),
-    ('VEG-005', 'SM Telabastagan',       25, 'DR-2504-VEG005-TEL'),
-    ('VEG-005', 'Savemore Apalit',       20, 'DR-2504-VEG005-APL'),
-
-    ('VEG-006', 'SM Grand Central',      25, 'DR-2504-VEG006-SMG'),
-    ('VEG-006', 'SM San Jose Del Monte', 20, 'DR-2504-VEG006-SJS'),
-    ('VEG-006', 'Savemore Muzon',        20, 'DR-2504-VEG006-MUZ'),
-    ('VEG-006', 'SM Telabastagan',       20, 'DR-2504-VEG006-TEL'),
-
-    ('VEG-007', 'SM Grand Central',      15, 'DR-2504-VEG007-SMG'),
-    ('VEG-007', 'SM Tarlac',             20, 'DR-2504-VEG007-TAR'),
-    ('VEG-007', 'Savemore Apalit',       15, 'DR-2504-VEG007-APL'),
-
-    ('VEG-008', 'SM Grand Central',      25, 'DR-2504-VEG008-SMG'),
-    ('VEG-008', 'SM San Jose Del Monte', 20, 'DR-2504-VEG008-SJS'),
-    ('VEG-008', 'Savemore Muzon',        20, 'DR-2504-VEG008-MUZ'),
-    ('VEG-008', 'SM Tarlac',             25, 'DR-2504-VEG008-TAR'),
-    ('VEG-008', 'SM Telabastagan',       20, 'DR-2504-VEG008-TEL'),
-
-    ('VEG-009', 'SM Grand Central',      35, 'DR-2504-VEG009-SMG'),
-    ('VEG-009', 'SM San Jose Del Monte', 30, 'DR-2504-VEG009-SJS'),
-    ('VEG-009', 'Savemore Muzon',        25, 'DR-2504-VEG009-MUZ'),
-    ('VEG-009', 'SM Tarlac',             30, 'DR-2504-VEG009-TAR'),
-    ('VEG-009', 'SM Telabastagan',       25, 'DR-2504-VEG009-TEL'),
-    ('VEG-009', 'Savemore Apalit',       20, 'DR-2504-VEG009-APL'),
-
-    ('VEG-010', 'SM Grand Central',      20, 'DR-2504-VEG010-SMG'),
-    ('VEG-010', 'SM San Jose Del Monte', 15, 'DR-2504-VEG010-SJS'),
-    ('VEG-010', 'SM Tarlac',             15, 'DR-2504-VEG010-TAR'),
-
-    ('VEG-011', 'SM Grand Central',      30, 'DR-2504-VEG011-SMG'),
-    ('VEG-011', 'SM San Jose Del Monte', 25, 'DR-2504-VEG011-SJS'),
-    ('VEG-011', 'Savemore Muzon',        20, 'DR-2504-VEG011-MUZ'),
-    ('VEG-011', 'SM Tarlac',             25, 'DR-2504-VEG011-TAR'),
-    ('VEG-011', 'Savemore Apalit',       20, 'DR-2504-VEG011-APL'),
-
-    ('VEG-012', 'SM Grand Central',      25, 'DR-2504-VEG012-SMG'),
-    ('VEG-012', 'SM San Jose Del Monte', 20, 'DR-2504-VEG012-SJS'),
-    ('VEG-012', 'Savemore Muzon',        20, 'DR-2504-VEG012-MUZ'),
-    ('VEG-012', 'SM Tarlac',             20, 'DR-2504-VEG012-TAR'),
-    ('VEG-012', 'SM Telabastagan',       15, 'DR-2504-VEG012-TEL'),
+    ('VEG-005', 'SM San Jose Del Monte', 25, 'DR-2504-VEG005-SJS'),
+    ('VEG-005', 'Savemore Muzon',        20, 'DR-2504-VEG005-MUZ'),
 ]
 
-# (sku, qty, note)
+# (sku, qty, note, loss_location, transit_branch_or_None)
+# transit losses must reference a delivery; warehouse losses have no source_delivery
 LOSSES_DATA = [
-    ('VEG-001',  5, 'Wilting during warehouse storage — disposed before dispatch', 'warehouse'),
-    ('VEG-002',  8, 'Yellowing detected during quality check; exceeded safe shelf life', 'warehouse'),
-    ('VEG-007',  6, 'Pest damage found on inspection — batch quarantined and discarded', 'warehouse'),
-    ('VEG-010',  4, 'Bruising from improper stacking during inbound transport', 'warehouse'),
-    ('VEG-011',  7, 'Spoilage due to cooling unit downtime — 4-hour temperature breach', 'warehouse'),
+    ('VEG-001', 5, 'Wilting during warehouse storage — disposed before dispatch',         'warehouse', None),
+    ('VEG-002', 3, 'Damaged bundles found during transit to SM Grand Central',             'transit',   'SM Grand Central'),
+    ('VEG-005', 4, 'Spoilage due to cooling unit downtime — 4-hour temperature breach',   'warehouse', None),
 ]
 
-# (sku, branch_name, qty, reference_no, note)
-RETURNS_DATA = [
-    ('VEG-001', 'SM Grand Central',       5, 'RT-2504-VEG001-SMG', 'Near-expiry Kangkong returned; accepted at warehouse with deduction note'),
-    ('VEG-004', 'SM Tarlac',              4, 'RT-2504-VEG004-TAR', 'Partial return — branch overstocked; 4 bundles returned in good condition'),
-    ('VEG-008', 'SM San Jose Del Monte',  6, 'RT-2504-VEG008-SJS', 'Unsold Talong returned with signed return slip from branch supervisor'),
-    ('VEG-006', 'Savemore Muzon',         3, 'RT-2504-VEG006-MUZ', 'Branch requested pullback — low foot traffic this week'),
-]
-
-# (sku, branch_name, qty, note, back_order_status)
-BACK_ORDERS_DATA = [
-    ('VEG-003', 'Savemore Apalit',  18, 'Branch requested 18 bundles of Sitaw; stock already committed to other branches this cycle', 'pending'),
-    ('VEG-010', 'SM Telabastagan',  12, 'Kamatis harvest volume insufficient for additional delivery — next batch in 3 days', 'pending'),
-    ('VEG-012', 'Savemore Apalit',  15, 'Labanos back order logged; branch confirmed they will wait for next dispatch', 'pending'),
-    # Partial fulfillment scenario: initial back order of 20 units
-    ('VEG-004', 'Savemore Apalit',  20, 'Initial back order — branch requested 20 pcs of Kalabasa', 'fulfilled'),
-    # Partial delivery that closed first back order but only delivered 12 units, creating new back order for remaining 8
-    ('VEG-004', 'Savemore Apalit',   8, 'Remaining unfulfilled from initial 20-unit back order; next delivery expected', 'pending'),
-]
-
-# (sku, branch_name, days_ago, sold_qty, delivery_qty, resolution_status, resolution_note)
-# resolution_status: None = leave as pending; 'returned'/'written_off'/'corrected' = mark resolved
+# (sku, branch_name, sold_qty, delivery_qty, days_ago, resolution_status, resolution_note)
+# resolution_status None = leave as pending; discrepancy = delivery_qty - sold_qty
 RECONCILIATION_DATA = [
-    # Kangkong
-    ('VEG-001', 'SM Grand Central',      3, 28, 30, None,          ''),
-    ('VEG-001', 'SM San Jose Del Monte', 3, 25, 25, None,          ''),
-    ('VEG-001', 'SM Tarlac',             4, 22, 25, 'written_off', '3 bundles confirmed expired before sale date; noted by SM Tarlac branch manager'),
+    # Kangkong — pending gap, written off, pending gap
+    ('VEG-001', 'SM Grand Central',      28, 30, 3, None,          ''),
+    ('VEG-001', 'SM Tarlac',             22, 25, 4, 'written_off', '3 bundles confirmed expired before sale date; noted by SM Tarlac branch manager'),
+    ('VEG-001', 'Savemore Muzon',        18, 20, 3, None,          ''),
 
-    # Pechay
-    ('VEG-002', 'SM Grand Central',      3, 25, 25, None,          ''),
-    ('VEG-002', 'SM Tarlac',             3, 18, 20, 'returned',    '2 bundles returned to EFP warehouse; return slip RT-2504-VEG002-TAR on file'),
-    ('VEG-002', 'SM Telabastagan',       4, 15, 15, None,          ''),
+    # Pechay — exact match (auto-reconciled), pending gap
+    ('VEG-002', 'SM Grand Central',      25, 25, 3, None,          ''),
+    ('VEG-002', 'SM San Jose Del Monte', 17, 20, 4, None,          ''),
 
-    # Sitaw
-    ('VEG-003', 'SM Grand Central',      3, 20, 20, None,          ''),
-    ('VEG-003', 'SM San Jose Del Monte', 3, 17, 20, None,          ''),
+    # Sitaw — pending gaps
+    ('VEG-003', 'SM Grand Central',      19, 20, 3, None,          ''),
+    ('VEG-003', 'SM Tarlac',             18, 18, 3, None,          ''),
 
-    # Ampalaya
-    ('VEG-004', 'SM Grand Central',      3, 19, 20, 'corrected',   'Branch re-count confirmed 19 sold; original tally was off by 1 — cashier error'),
-    ('VEG-004', 'SM Telabastagan',       3, 20, 20, None,          ''),
+    # Ampalaya — corrected entry, exact match
+    ('VEG-004', 'SM Grand Central',      19, 20, 3, 'corrected',   'Branch re-count confirmed 19 sold; original tally was off by 1 — cashier encoding error'),
+    ('VEG-004', 'SM Tarlac',             15, 15, 3, None,          ''),
 
-    # Kamote Tops
-    ('VEG-005', 'SM Grand Central',      3, 30, 30, None,          ''),
-    ('VEG-005', 'SM San Jose Del Monte', 3, 28, 30, None,          ''),
-    ('VEG-005', 'SM Tarlac',             4, 27, 30, 'written_off', '3 bundles damaged due to improper refrigeration at branch cold room'),
-
-    # Malunggay
-    ('VEG-006', 'SM Grand Central',      3, 25, 25, None,          ''),
-    ('VEG-006', 'SM San Jose Del Monte', 3, 18, 20, None,          ''),
-
-    # Talong
-    ('VEG-008', 'SM Grand Central',      3, 24, 25, None,          ''),
-    ('VEG-008', 'SM Tarlac',             3, 25, 25, None,          ''),
-
-    # Kalabasa
-    ('VEG-009', 'SM Grand Central',      3, 33, 35, 'returned',    '2 pcs returned — over-delivered vs branch shelf capacity; return accepted'),
-    ('VEG-009', 'SM San Jose Del Monte', 3, 30, 30, None,          ''),
-    ('VEG-009', 'Savemore Muzon',        3, 22, 25, None,          ''),
-
-    # Kamatis
-    ('VEG-010', 'SM Grand Central',      3, 20, 20, None,          ''),
-
-    # Sibuyas Dahon
-    ('VEG-011', 'SM Grand Central',      3, 28, 30, 'corrected',   'Branch re-tallied; 28 sold confirmed — previous count of 26 was a cashier encoding error'),
-    ('VEG-011', 'SM Tarlac',             3, 25, 25, None,          ''),
-
-    # Labanos
-    ('VEG-012', 'SM Grand Central',      3, 23, 25, None,          ''),
-    ('VEG-012', 'SM Tarlac',             3, 20, 20, None,          ''),
-
-    # Over-sold scenarios (negative discrepancy — sold > delivered)
-    ('VEG-005', 'Savemore Apalit',       5, 32, 30, 'over_sold',   'Branch re-count showed 32 sold; original count 30 — demand exceeded initial supply'),
-    ('VEG-009', 'Savemore Apalit',       5, 24, 20, 'over_sold',   'Branch sold 4 more units than delivered; inventory miscalculation at branch'),
-
-    # Additional written-off scenarios (positive discrepancy — sold < delivered)
-    ('VEG-003', 'SM Tarlac',             5, 15, 18, 'written_off', '3 bundles expired before sale — not sellable'),
-    ('VEG-006', 'Savemore Apalit',       6, 12, 15, 'written_off', '3 bundles wilted during cold storage — damaged goods'),
-    ('VEG-010', 'Savemore Muzon',        5, 8, 12,  'written_off', '4 units bruised from improper handling at branch'),
+    # Kamote Tops — over-sold (negative discrepancy), written off, pending
+    ('VEG-005', 'SM Grand Central',      32, 30, 3, 'over_sold',   'Branch re-count showed 32 sold; demand exceeded initial supply — branch miscalculated intake'),
+    ('VEG-005', 'SM San Jose Del Monte', 23, 25, 4, 'written_off', '2 bundles damaged due to improper refrigeration at branch cold room'),
+    ('VEG-005', 'Savemore Muzon',        18, 20, 3, None,          ''),
 ]
 
 
 class Command(BaseCommand):
-    help = 'Clear and reseed the database with realistic EFP sample data'
+    help = 'Clear and reseed the database with focused EFP sample data'
 
     def handle(self, *args, **options):
         today = timezone.now().date()
@@ -242,17 +124,16 @@ class Command(BaseCommand):
         self.stdout.write('Creating branches...')
         branches = {}
         for name, address in BRANCH_DATA:
-            branch = Branch.objects.create(name=name, address=address)
-            branches[name] = branch
+            branches[name] = Branch.objects.create(name=name, address=address)
         self.stdout.write(f'  {len(branches)} branches created.')
 
         # ── Users ─────────────────────────────────────────────────────
         self.stdout.write('Creating users...')
         role_defs = [
-            ('warehouse_staff', 'warehouse',  'Maria',  'Santos'),
-            ('sales_rep',       'sales',      'Jose',   'Reyes'),
-            ('accountant',      'accountant', 'Ana',    'Cruz'),
-            ('admin_user',      'admin',      'Pedro',  'Dela Cruz'),
+            ('warehouse_staff', 'warehouse',  'Maria', 'Santos'),
+            ('sales_rep',       'sales',      'Jose',  'Reyes'),
+            ('accountant',      'accountant', 'Ana',   'Cruz'),
+            ('admin_user',      'admin',      'Pedro', 'Dela Cruz'),
         ]
         users = {}
         for username, role, first, last in role_defs:
@@ -281,12 +162,8 @@ class Command(BaseCommand):
         products = {}
         for name, sku, category, unit_price, unit in PRODUCTS_DATA:
             prod = Product.objects.create(
-                name=name,
-                sku=sku,
-                category=category,
-                quantity=0,
-                unit=unit,
-                unit_price=unit_price,
+                name=name, sku=sku, category=category,
+                quantity=0, unit=unit, unit_price=unit_price,
             )
             products[sku] = prod
             _log(warehouse, 'create', prod, f"SKU={sku}")
@@ -295,13 +172,12 @@ class Command(BaseCommand):
         # ── Production In ─────────────────────────────────────────────
         self.stdout.write('Recording production batches...')
         production_batches = {}
-        for sku, qty, batch_no, ref in PRODUCTION_DATA:
+        for sku, qty, batch_no in PRODUCTION_DATA:
             prod = products[sku]
             mv = InventoryMovement.objects.create(
                 product=prod,
                 movement_type='production_in',
                 quantity=qty,
-                reference_no=ref,
                 batch_number=batch_no,
                 production_date=prod_date,
                 expiration_date=exp_date,
@@ -310,10 +186,10 @@ class Command(BaseCommand):
             )
             production_batches[sku] = mv
             _log(warehouse, 'create', mv, f"type=production_in, qty={qty}, product={prod}")
+        self.stdout.write(f'  {len(production_batches)} batches recorded.')
 
         # ── Delivery Out ──────────────────────────────────────────────
         self.stdout.write('Recording deliveries...')
-        delivery_count = 0
         delivery_movements = {}
         for sku, branch_name, qty, ref in DELIVERIES_DATA:
             prod   = products[sku]
@@ -328,70 +204,98 @@ class Command(BaseCommand):
                 source_batch=production_batches[sku],
                 created_by=sales,
             )
+            delivery_movements[(sku, branch_name)] = mv
             _log(sales, 'create', mv,
                  f"type=delivery_out, qty={qty}, product={prod}, branch={branch_name}")
-            delivery_movements[(sku, branch_name)] = mv
-            delivery_count += 1
-        self.stdout.write(f'  {delivery_count} deliveries recorded.')
+        self.stdout.write(f'  {len(delivery_movements)} deliveries recorded.')
 
-        # ── Loss ──────────────────────────────────────────────────────
-        self.stdout.write('Recording losses...')
-        for sku, qty, note, loss_loc in LOSSES_DATA:
+        # ── Stock Loss ────────────────────────────────────────────────
+        self.stdout.write('Recording stock losses...')
+        for sku, qty, note, loss_loc, transit_branch in LOSSES_DATA:
             prod = products[sku]
+            source_delivery = delivery_movements.get((sku, transit_branch)) if transit_branch else None
             mv = InventoryMovement.objects.create(
                 product=prod,
                 movement_type='loss',
                 quantity=qty,
                 note=note,
+                loss_location=loss_loc,
                 source_batch=production_batches[sku],
-                source_delivery=delivery_movements.get((sku, branch_name)),
-                created_by=warehouse,
-            )
-            _log(warehouse, 'create', mv, f"type=loss, qty={qty}, product={prod}")
-
-        # ── Return In ─────────────────────────────────────────────────
-        self.stdout.write('Recording returns...')
-        for sku, branch_name, qty, ref, note in RETURNS_DATA:
-            prod   = products[sku]
-            branch = branches[branch_name]
-            mv = InventoryMovement.objects.create(
-                product=prod,
-                movement_type='return_in',
-                quantity=qty,
-                destination_branch=branch,
-                reference_no=ref,
-                note=note,
-                source_batch=production_batches[sku],
-                source_delivery=delivery_movements.get((sku, branch_name)),
+                source_delivery=source_delivery,
                 created_by=warehouse,
             )
             _log(warehouse, 'create', mv,
-                 f"type=return_in, qty={qty}, product={prod}, branch={branch_name}")
+                 f"type=loss, qty={qty}, product={prod}, location={loss_loc}")
+        self.stdout.write(f'  {len(LOSSES_DATA)} losses recorded.')
 
         # ── Back Orders ───────────────────────────────────────────────
         self.stdout.write('Recording back orders...')
-        for sku, branch_name, qty, note, back_order_status in BACK_ORDERS_DATA:
-            prod   = products[sku]
-            branch = branches[branch_name]
-            mv = InventoryMovement.objects.create(
-                product=prod,
-                movement_type='back_order',
-                quantity=qty,
-                destination_branch=branch,
-                note=note,
-                created_by=sales,
-                back_order_status=back_order_status,
-            )
-            _log(sales, 'create', mv,
-                 f"type=back_order, qty={qty}, product={prod}, branch={branch_name}, status={back_order_status}")
+
+        # Simple pending back order — insufficient stock this cycle
+        bo_kamote = InventoryMovement.objects.create(
+            product=products['VEG-005'],
+            movement_type='back_order',
+            quantity=20,
+            destination_branch=branches['SM Telabastagan'],
+            note='Branch requested 20 bundles of Kamote Tops; insufficient stock this cycle — next harvest in 3 days',
+            created_by=sales,
+            back_order_status='pending',
+        )
+        _log(sales, 'create', bo_kamote,
+             "type=back_order, qty=20, product=Kamote Tops, branch=SM Telabastagan, status=pending")
+
+        # Partial fulfillment scenario — Sitaw to Savemore Apalit
+        # Step 1: Branch orders 25 bundles; recorded as back order
+        bo_sitaw = InventoryMovement.objects.create(
+            product=products['VEG-003'],
+            movement_type='back_order',
+            quantity=25,
+            destination_branch=branches['Savemore Apalit'],
+            note='Branch requested 25 bundles of Sitaw; stock already committed to other branches this cycle',
+            created_by=sales,
+            back_order_status='fulfilled',
+        )
+        _log(sales, 'create', bo_sitaw,
+             "type=back_order, qty=25, product=Sitaw, branch=Savemore Apalit, status=fulfilled")
+
+        # Step 2: Only 15 bundles available — partial delivery that closes the back order
+        mv_sitaw_partial = InventoryMovement.objects.create(
+            product=products['VEG-003'],
+            movement_type='delivery_out',
+            quantity=15,
+            destination_branch=branches['Savemore Apalit'],
+            reference_no='DR-2504-VEG003-APL',
+            note='Partial fulfillment of back order — 15 of 25 bundles delivered; remainder re-queued',
+            source_batch=production_batches['VEG-003'],
+            closes_back_order=bo_sitaw,
+            created_by=sales,
+        )
+        delivery_movements[('VEG-003', 'Savemore Apalit')] = mv_sitaw_partial
+        _log(sales, 'create', mv_sitaw_partial,
+             "type=delivery_out, qty=15, product=Sitaw, branch=Savemore Apalit, closes_back_order=yes")
+
+        # Step 3: Remainder back order auto-created for the unfulfilled 10 bundles
+        bo_sitaw_remainder = InventoryMovement.objects.create(
+            product=products['VEG-003'],
+            movement_type='back_order',
+            quantity=10,
+            destination_branch=branches['Savemore Apalit'],
+            note='Remaining 10 bundles from partial fulfillment of 25-unit back order — next dispatch expected',
+            created_by=sales,
+            back_order_status='pending',
+        )
+        _log(sales, 'create', bo_sitaw_remainder,
+             "type=back_order, qty=10, product=Sitaw, branch=Savemore Apalit, status=pending")
+
+        self.stdout.write('  3 back orders recorded (1 pending, 1 fulfilled + 1 pending remainder).')
 
         # ── Reconciliation ────────────────────────────────────────────
         self.stdout.write('Recording reconciliation data...')
         recon_count = 0
         now = timezone.now()
-        for sku, branch_name, days_ago, sold_qty, delivery_qty, resolution, note in RECONCILIATION_DATA:
-            prod      = products[sku]
-            branch    = branches[branch_name]
+        for sku, branch_name, sold_qty, delivery_qty, days_ago, resolution, note in RECONCILIATION_DATA:
+            prod       = products[sku]
+            branch     = branches[branch_name]
             sales_date = today - timedelta(days=days_ago)
 
             rec = RetailerSales.objects.create(
