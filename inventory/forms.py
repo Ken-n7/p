@@ -73,16 +73,10 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         empty_label='Select a branch',
         label='Branch',
     )
-    closes_back_order = forms.ModelChoiceField(
-        queryset=InventoryMovement.objects.filter(movement_type='back_order', back_order_status='pending').order_by('product__name'),
-        required=False,
-        empty_label='— None (does not close a back order) —',
-        label='Closes Back Order',
-    )
 
     class Meta:
         model = InventoryMovement
-        fields = ['closes_back_order', 'product', 'source_batch', 'destination_branch', 'quantity', 'reference_no', 'note']
+        fields = ['product', 'source_batch', 'destination_branch', 'quantity', 'reference_no', 'note']
         widgets = {
             'note': forms.Textarea(attrs={'rows': 3}),
         }
@@ -91,10 +85,6 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self._style()
-        self.fields['closes_back_order'].label_from_instance = lambda obj: (
-            f"{obj.product.name} — {obj.quantity} {obj.product.unit}"
-            f" → {obj.destination_branch or '?'} ({obj.created_at.strftime('%b %d, %Y')})"
-        )
         self.fields['source_batch'].label_from_instance = lambda obj: (
             f"{obj.batch_number} — exp {obj.expiration_date}"
             f" ({obj.available_quantity()} {obj.product.unit} available)"
@@ -107,7 +97,6 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         branch = cleaned_data.get('destination_branch')
         quantity = cleaned_data.get('quantity')
         ref = cleaned_data.get('reference_no', '').strip()
-        closes_bo = cleaned_data.get('closes_back_order')
 
         if not branch:
             self.add_error('destination_branch', 'A branch is required for delivery.')
@@ -123,10 +112,6 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
             avail = source_batch.available_quantity()
             if quantity > avail:
                 self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
-        if closes_bo and product and closes_bo.product != product:
-            self.add_error('closes_back_order', 'Selected back order is for a different product.')
-        if closes_bo and branch and closes_bo.destination_branch != branch:
-            self.add_error('closes_back_order', 'Selected back order is for a different branch.')
         return cleaned_data
 
 
@@ -189,37 +174,6 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
             self.add_error('source_delivery', 'A related delivery is required for transit losses.')
         if source_delivery and product and source_delivery.product != product:
             self.add_error('source_delivery', 'Selected delivery is for a different product.')
-        return cleaned_data
-
-
-class BackOrderForm(_MovementFormMixin, forms.ModelForm):
-    destination_branch = forms.ModelChoiceField(
-        queryset=Branch.objects.all(),
-        empty_label='Select a branch',
-        label='Branch',
-    )
-
-    class Meta:
-        model = InventoryMovement
-        fields = ['product', 'destination_branch', 'quantity', 'note']
-        widgets = {
-            'note': forms.Textarea(attrs={'rows': 3}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        self._style()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        branch = cleaned_data.get('destination_branch')
-        quantity = cleaned_data.get('quantity')
-
-        if not branch:
-            self.add_error('destination_branch', 'A branch is required.')
-        if quantity is not None and quantity == 0:
-            self.add_error('quantity', 'Quantity must be greater than zero.')
         return cleaned_data
 
 

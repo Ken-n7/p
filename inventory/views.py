@@ -14,7 +14,7 @@ from django.forms import ModelChoiceField
 from .models import Product, InventoryMovement, RetailerSales, AuditLog, Branch
 from .forms import (
     ProductForm, RetailerSalesForm, BranchForm, ReconciliationResolveForm,
-    ProductionInForm, DeliveryOutForm, LossForm, BackOrderForm,
+    ProductionInForm, DeliveryOutForm, LossForm,
     UserCreateForm, UserEditForm, ProfileForm,
 )
 
@@ -23,14 +23,12 @@ _TYPE_ROLES = {
     'production_in': ('admin', 'warehouse'),
     'delivery_out':  ('admin', 'sales'),
     'loss':          ('admin', 'warehouse'),
-    'back_order':    ('admin', 'sales'),
 }
 
 _MOVEMENT_FORMS = {
     'production_in': ProductionInForm,
     'delivery_out':  DeliveryOutForm,
     'loss':          LossForm,
-    'back_order':    BackOrderForm,
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -63,28 +61,6 @@ def _log(user, action, obj, changes=''):
         object_repr=str(obj),
         changes=changes,
     )
-
-
-def _handle_back_order_fulfillment(movement, user):
-    """Mark back order fulfilled; create remainder BO if partial. Returns remainder qty or None."""
-    bo = movement.closes_back_order
-    bo.back_order_status = 'fulfilled'
-    bo.save(update_fields=['back_order_status'])
-    if movement.quantity >= bo.quantity:
-        return None
-    remainder = bo.quantity - movement.quantity
-    new_bo = InventoryMovement(
-        product=bo.product,
-        movement_type='back_order',
-        quantity=remainder,
-        destination_branch=bo.destination_branch,
-        back_order_status='pending',
-        note=f"Remainder from partial fulfillment of back order #{bo.pk} — originally {bo.quantity} {bo.product.unit}, delivered {movement.quantity}",
-        created_by=user,
-    )
-    new_bo.save()
-    _log(user, 'create', new_bo, f"type=back_order, qty={new_bo.quantity}, product={new_bo.product}")
-    return remainder
 
 
 def _diff(form):
@@ -324,14 +300,7 @@ def movement_create(request):
             movement = form.save(commit=False)
             movement.movement_type = movement_type
             movement.created_by = request.user
-            if movement_type == 'back_order':
-                movement.back_order_status = 'pending'
             movement.save()
-            if movement_type == 'delivery_out' and movement.closes_back_order:
-                bo_qty = movement.closes_back_order.quantity
-                remainder = _handle_back_order_fulfillment(movement, request.user)
-                if remainder:
-                    messages.warning(request, f"Partial delivery: {movement.quantity} of {bo_qty} delivered. A new back order for the remaining {remainder} has been created automatically.")
             _log(request.user, 'create', movement, f"type={movement_type}, qty={movement.quantity}, product={movement.product}")
             messages.success(request, 'Movement recorded.')
             return redirect('movement_list')

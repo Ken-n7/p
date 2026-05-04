@@ -38,7 +38,6 @@ PRODUCTION_DATA = [
 ]
 
 # (sku, branch_name, qty, reference_no)
-# VEG-003 Savemore Muzon delivery is created separately as part of the partial back order scenario
 DELIVERIES_DATA = [
     ('VEG-001', 'SM Grand Central', 25, 'DR-2504-VEG001-SMG'),
     ('VEG-001', 'SM Tarlac',        20, 'DR-2504-VEG001-TAR'),
@@ -64,9 +63,9 @@ RECONCILIATION_DATA = [
     ('VEG-001', 'SM Grand Central', 23, 3, 'written_off', '2 bundles confirmed expired before sale date; noted by SM Grand Central branch manager'),
     ('VEG-001', 'SM Tarlac',        20, 3, None,          ''),
 
-    # Sitaw — pending gaps (SM Grand Central short, Savemore Muzon from partial BO delivery)
+    # Sitaw — pending gap (SM Grand Central short)
     ('VEG-003', 'SM Grand Central', 13, 3, None,          ''),
-    ('VEG-003', 'Savemore Muzon',   10, 3, None,          ''),
+    ('VEG-003', 'SM Tarlac',        12, 3, None,          ''),
 
     # Ampalaya — corrected entry, exact match (auto-reconciled)
     ('VEG-004', 'SM Grand Central', 19, 3, 'corrected',   'Branch re-count confirmed 19 sold; original tally was off by 1 — cashier encoding error'),
@@ -198,67 +197,6 @@ class Command(BaseCommand):
             _log(warehouse, 'create', mv,
                  f"type=loss, qty={qty}, product={prod}, location={loss_loc}")
         self.stdout.write(f'  {len(LOSSES_DATA)} losses recorded.')
-
-        # ── Back Orders ───────────────────────────────────────────────
-        self.stdout.write('Recording back orders...')
-
-        # Simple pending back order — Ampalaya to Savemore Muzon
-        bo_ampalaya = InventoryMovement.objects.create(
-            product=products['VEG-004'],
-            movement_type='back_order',
-            quantity=15,
-            destination_branch=branches['Savemore Muzon'],
-            note='Branch requested 15 kg of Ampalaya; insufficient stock this cycle — next harvest in 3 days',
-            created_by=sales,
-            back_order_status='pending',
-        )
-        _log(sales, 'create', bo_ampalaya,
-             "type=back_order, qty=15, product=Ampalaya, branch=Savemore Muzon, status=pending")
-
-        # Partial fulfillment scenario — Sitaw to Savemore Muzon
-        # Step 1: Branch orders 20 bundles; not enough stock so recorded as back order
-        bo_sitaw = InventoryMovement.objects.create(
-            product=products['VEG-003'],
-            movement_type='back_order',
-            quantity=20,
-            destination_branch=branches['Savemore Muzon'],
-            note='Branch requested 20 bundles of Sitaw; stock already committed to other branches',
-            created_by=sales,
-            back_order_status='fulfilled',
-        )
-        _log(sales, 'create', bo_sitaw,
-             "type=back_order, qty=20, product=Sitaw, branch=Savemore Muzon, status=fulfilled")
-
-        # Step 2: Only 12 bundles available — partial delivery that closes the back order
-        mv_sitaw_partial = InventoryMovement.objects.create(
-            product=products['VEG-003'],
-            movement_type='delivery_out',
-            quantity=12,
-            destination_branch=branches['Savemore Muzon'],
-            reference_no='DR-2504-VEG003-MUZ',
-            note='Partial fulfillment of back order — 12 of 20 bundles delivered; remainder re-queued',
-            source_batch=production_batches['VEG-003'],
-            closes_back_order=bo_sitaw,
-            created_by=sales,
-        )
-        delivery_movements[('VEG-003', 'Savemore Muzon')] = mv_sitaw_partial
-        _log(sales, 'create', mv_sitaw_partial,
-             "type=delivery_out, qty=12, product=Sitaw, branch=Savemore Muzon, closes_back_order=yes")
-
-        # Step 3: Remainder back order for unfulfilled 8 bundles
-        bo_sitaw_remainder = InventoryMovement.objects.create(
-            product=products['VEG-003'],
-            movement_type='back_order',
-            quantity=8,
-            destination_branch=branches['Savemore Muzon'],
-            note='Remaining 8 bundles from partial fulfillment of 20-unit back order — next dispatch expected',
-            created_by=sales,
-            back_order_status='pending',
-        )
-        _log(sales, 'create', bo_sitaw_remainder,
-             "type=back_order, qty=8, product=Sitaw, branch=Savemore Muzon, status=pending")
-
-        self.stdout.write('  3 back orders recorded (1 pending, 1 fulfilled + 1 pending remainder).')
 
         # ── Reconciliation ────────────────────────────────────────────
         # delivery_movement is looked up from delivery_movements so the dropdown filter works correctly

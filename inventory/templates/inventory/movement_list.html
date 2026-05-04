@@ -112,14 +112,6 @@
                             {% else %}
                             <span class="badge" style="background:#dcfce7;color:#15803d;">Resolved</span>
                             {% endif %}
-                        {% elif m.movement_type == 'back_order' %}
-                            {% if m.back_order_status == 'pending' %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
-                            {% elif m.back_order_status == 'fulfilled' %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">Fulfilled</span>
-                            {% elif m.back_order_status == 'cancelled' %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">Cancelled</span>
-                            {% endif %}
                         {% else %}
                             <span style="color:#cbd5e1;">—</span>
                         {% endif %}

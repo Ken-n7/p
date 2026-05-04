@@ -15,25 +15,7 @@
 
                     {% if movement_type == 'delivery_out' %}
                     <div class="mb-3">
-                        <label class="form-label">{{ form.closes_back_order.label }}</label>
-                        <select id="id_closes_back_order" name="closes_back_order" class="form-control">
-                            <option value="">— None (does not close a back order) —</option>
-                            {% for bo in form.closes_back_order.field.queryset %}
-                            <option value="{{ bo.pk }}" data-product-id="{{ bo.product_id }}" data-branch-id="{{ bo.destination_branch_id|default:'' }}" {% if form.closes_back_order.value == bo.pk|stringformat:"s" %}selected{% endif %}>{{ bo.product.name }} — {{ bo.quantity }} {{ bo.product.unit }} → {{ bo.destination_branch|default:"?" }} ({{ bo.created_at|date:"M d, Y" }})</option>
-                            {% endfor %}
-                        </select>
-                        <div id="back-order-link-badge" class="mt-1" style="display:none;">
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
-                                <i class="fas fa-link" style="margin-right:4px;"></i>
-                                Back order linked — Product and Branch are auto-filled.
-                                <button type="button" id="clear-back-order" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
-                            </span>
-                        </div>
-                        {% if form.closes_back_order.errors %}<div class="text-danger">{{ form.closes_back_order.errors }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">{{ form.product.label }}</label>{{ form.product }}
-                        <input type="hidden" id="hidden_product" name="product" disabled>
                         {% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}
                     </div>
                     <div class="mb-3">
@@ -42,7 +24,6 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}
-                        <input type="hidden" id="hidden_destination_branch" name="destination_branch" disabled>
                         {% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}
                     </div>
                     <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
@@ -70,11 +51,6 @@
                     </div>
                     <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
 
-                    {% elif movement_type == 'back_order' %}
-                    <div class="mb-3"><label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}{% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.product.label }}</label>{{ form.product }}{% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
                     {% else %}
                     {{ form.as_p }}
                     {% endif %}
@@ -127,56 +103,14 @@
             });
     }
 
-    function applyLinkedLock(selectEl, hiddenEl, value, lock) {
-        if (!selectEl || !hiddenEl) return;
-        selectEl.disabled = lock;
-        selectEl.style.background = lock ? '#f8fafc' : '';
-        hiddenEl.disabled = !lock;
-        hiddenEl.value = lock ? (value || '') : '';
-    }
-
     if (movementType === 'delivery_out') {
-        const backOrder = document.getElementById('id_closes_back_order');
         const product = document.getElementById('id_product');
-        const branch = document.getElementById('id_destination_branch');
-        const hiddenProduct = document.getElementById('hidden_product');
-        const hiddenBranch = document.getElementById('hidden_destination_branch');
-        const badge = document.getElementById('back-order-link-badge');
-        const clearBtn = document.getElementById('clear-back-order');
 
         product.addEventListener('change', function() {
             refreshBatches(this.value);
         });
 
-        backOrder.addEventListener('change', function() {
-            const selected = this.options[this.selectedIndex];
-            if (!this.value) {
-                applyLinkedLock(product, hiddenProduct, '', false);
-                applyLinkedLock(branch, hiddenBranch, '', false);
-                badge.style.display = 'none';
-                return;
-            }
-            const productId = selected.dataset.productId || '';
-            const branchId = selected.dataset.branchId || '';
-            product.value = productId;
-            product.dispatchEvent(new Event('change'));
-            branch.value = branchId;
-            applyLinkedLock(product, hiddenProduct, productId, true);
-            applyLinkedLock(branch, hiddenBranch, branchId, true);
-            badge.style.display = 'block';
-        });
-
-        clearBtn.addEventListener('click', function(){
-            backOrder.value = '';
-            product.value = '';
-            product.dispatchEvent(new Event('change'));
-            branch.value = '';
-            applyLinkedLock(product, hiddenProduct, '', false);
-            applyLinkedLock(branch, hiddenBranch, '', false);
-            badge.style.display = 'none';
-        });
-
-        if (backOrder.value) backOrder.dispatchEvent(new Event('change'));
+        refreshBatches(product.value);
     }
 
     if (movementType === 'loss') {
