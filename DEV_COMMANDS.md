@@ -58,7 +58,7 @@ docker exec -it supply-chain-match-web-1 python manage.py shell
 # Seed database with sample products, movements, users, reconciliation records
 docker exec supply-chain-match-web-1 python manage.py seed_data
 
-# Seed users (demo credentials after seeding):
+# Demo credentials after seeding:
 #   warehouse_staff / efp2025
 #   sales_rep       / efp2025
 #   accountant      / efp2025
@@ -67,7 +67,6 @@ docker exec supply-chain-match-web-1 python manage.py seed_data
 
 ```bash
 # Clear ALL data (products, movements, reconciliation, audit log, non-superusers)
-# and start fresh — then re-seed
 docker exec supply-chain-match-web-1 python manage.py shell -c "
 from inventory.models import Product, InventoryMovement, RetailerSales, AuditLog
 from django.contrib.auth.models import User
@@ -138,7 +137,7 @@ docker exec -it supply-chain-match-web-1 bash
 - URL: http://localhost:8080
 - Server: `db`
 - Username: `root`
-- Password: check `docker-compose.yml` → `MYSQL_ROOT_PASSWORD`
+- Password: check `.env` → `MYSQL_ROOT_PASSWORD`
 
 ---
 
@@ -152,15 +151,8 @@ docker exec supply-chain-match-web-1 python manage.py migrate
 # Show migration status
 docker exec supply-chain-match-web-1 python manage.py showmigrations inventory
 
-# Roll back last migration
-docker exec supply-chain-match-web-1 python manage.py migrate inventory <previous_migration_name>
+# Roll back to a specific migration
+docker exec supply-chain-match-web-1 python manage.py migrate inventory <migration_name>
 ```
 
----
-
-## Git Branches
-
-| Branch | Purpose |
-|---|---|
-| `main` | Stable demo — delivered to client (2k budget) |
-| `enhanced` | Enhanced version with modern UI, Chart.js, CSV export, user deactivate/delete — for upsell |
+Current latest migration: `0012_remove_inventorymovement_back_order_status_and_more`
