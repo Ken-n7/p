@@ -27,4 +27,16 @@
         </div>
     </div>
 </div>
+<script>
+function toggleBranchField() {
+    const role = document.getElementById('id_role');
+    const branchField = document.getElementById('div_id_assigned_branches');
+    if (!role || !branchField) return;
+    branchField.style.display = role.value === 'sales' ? 'block' : 'none';
+}
+document.addEventListener('DOMContentLoaded', function () {
+    toggleBranchField();
+    document.getElementById('id_role').addEventListener('change', toggleBranchField);
+});
+</script>
 {% endblock %}

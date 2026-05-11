@@ -180,7 +180,9 @@ Shows all system users, their roles, and account status.
 
 **Add a user:** Click **Add User** → fill in username, name, email, password, and assign a role.
 
-**Edit a user:** Click **Edit** on the user row — update name, email, or role.
+**Assigned Branches (Sales role only):** When the Sales role is selected, a checkbox list of branches appears. Tick the branches that sales rep is responsible for delivering to. They will only be able to record deliveries to those branches. If no branches are assigned, the delivery form will show all branches.
+
+**Edit a user:** Click **Edit** on the user row — update name, email, role, or branch assignments.
 
 **Deactivate / Activate:** Prevents or restores login access without deleting the account. Click the toggle button on the user row.
 

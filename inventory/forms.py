@@ -85,6 +85,12 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self._style()
+        if self.user and not self.user.is_superuser:
+            profile = getattr(self.user, 'profile', None)
+            if profile and profile.role == 'sales':
+                assigned = profile.assigned_branches.all()
+                if assigned.exists():
+                    self.fields['destination_branch'].queryset = assigned
         self.fields['source_batch'].label_from_instance = lambda obj: (
             f"{obj.batch_number} — exp {obj.expiration_date}"
             f" ({obj.available_quantity()} {obj.product.unit} available)"
@@ -280,6 +286,13 @@ class BranchForm(forms.ModelForm):
 
 class UserCreateForm(UserCreationForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
+    assigned_branches = forms.ModelMultipleChoiceField(
+        queryset=Branch.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label='Assigned Branches',
+        help_text='Select branches this sales rep can deliver to.',
+    )
 
     class Meta:
         model = User
@@ -289,6 +302,7 @@ class UserCreateForm(UserCreationForm):
         user = super().save(commit=commit)
         if commit:
             _save_user_profile(user, self.cleaned_data['role'])
+            user.profile.assigned_branches.set(self.cleaned_data.get('assigned_branches', []))
         return user
 
 
@@ -305,6 +319,13 @@ class ProfileForm(forms.ModelForm):
 
 class UserEditForm(forms.ModelForm):
     role = forms.ChoiceField(choices=UserProfile.ROLE_CHOICES)
+    assigned_branches = forms.ModelMultipleChoiceField(
+        queryset=Branch.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label='Assigned Branches',
+        help_text='Select branches this sales rep can deliver to.',
+    )
 
     class Meta:
         model = User
@@ -314,9 +335,11 @@ class UserEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and hasattr(self.instance, 'profile'):
             self.fields['role'].initial = self.instance.profile.role
+            self.fields['assigned_branches'].initial = self.instance.profile.assigned_branches.all()
 
     def save(self, commit=True):
         user = super().save(commit=commit)
         if commit:
             _save_user_profile(user, self.cleaned_data['role'])
+            user.profile.assigned_branches.set(self.cleaned_data.get('assigned_branches', []))
         return user

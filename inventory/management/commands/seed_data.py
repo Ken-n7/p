@@ -114,7 +114,9 @@ class Command(BaseCommand):
                 first_name=first, last_name=last,
                 email=f'{username}@efp.local',
             )
-            UserProfile.objects.create(user=user, role=role)
+            profile = UserProfile.objects.create(user=user, role=role)
+            if role == 'sales':
+                profile.assigned_branches.set(branches.values())
             users[role] = user
             if superuser:
                 _log(superuser, 'create', user, f"role={role}")
