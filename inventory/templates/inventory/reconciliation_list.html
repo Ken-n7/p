@@ -1,196 +1,188 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Stock Reconciliation</h5>
-        <p class="text-muted small mb-0">SM & Savemore branch sales vs internal delivery.</p>
+        <h1>Stock Reconciliation</h1>
+        <p class="page-sub">SM &amp; Savemore branch sales vs. internal delivery.</p>
     </div>
-    <a href="{% url 'reconciliation_add' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus"></i> Add Sales Data
-    </a>
-</div>
-
-<div class="alert mb-3" style="background:#f0f9ff;border-left:3px solid #0284c7;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#0c4a6e;">
-    <i class="fas fa-lock" style="color:#0284c7;margin-right:6px;"></i>
-    <strong>Records are permanent.</strong>
-    If incorrect, submit a new corrected entry and note the discrepancy.
-</div>
-
-<div class="card mb-3" style="border-radius:10px!important;">
-    <div class="card-body py-3 px-3">
-        <form method="get">
-            <div class="row g-2 align-items-end">
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Branch</label>
-                    <select name="branch" class="form-select form-select-sm">
-                        <option value="">All Branches</option>
-                        {% for b in branches %}
-                        <option value="{{ b.pk }}" {% if branch_id == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Product</label>
-                    <select name="product" class="form-select form-select-sm">
-                        <option value="">All Products</option>
-                        {% for p in products %}
-                        <option value="{{ p.pk }}" {% if product_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Status</label>
-                    <select name="status" class="form-select form-select-sm">
-                        <option value="">All Statuses</option>
-                        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
-                        <option value="reconciled" {% if status == 'reconciled' %}selected{% endif %}>Reconciled</option>
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Date From</label>
-                    <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-sm-6 col-md-2">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Date To</label>
-                    <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-12 d-flex gap-2 pt-1">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    {% if has_filters %}
-                    <a href="{% url 'reconciliation_list' %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-times"></i> Clear
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </form>
+    <div class="page-head-actions">
+        <a href="{% url 'reconciliation_add' %}" class="btn btn-success">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add Sales Data
+        </a>
     </div>
 </div>
 
-<!-- Summary Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#e0f2fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-file-alt" style="color:#0369a1;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Records</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">{{ reconciliations.count }}</div>
-                </div>
-            </div>
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Records</span>
+            <span class="stat-icon info"><i class="fas fa-file-lines" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value">{{ reconciliations.count }}</div>
+        <div class="stat-meta">{% if has_filters %}Matching current filters{% else %}All time{% endif %}</div>
     </div>
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Discrepancy</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:{% if total_discrepancy != 0 %}#dc2626{% else %}#0f172a{% endif %};line-height:1.1;">
-                        {{ total_discrepancy }} <span style="font-size:0.75rem;font-weight:400;">units</span>
-                    </div>
-                </div>
-            </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Discrepancy</span>
+            <span class="stat-icon danger"><i class="fas fa-circle-exclamation" aria-hidden="true"></i></span>
         </div>
-    </div>
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-check-circle" style="color:#16a34a;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Reconciled</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">{{ reconciled_count }}</div>
-                </div>
-            </div>
+        <div class="stat-value {% if total_discrepancy != 0 %}danger{% endif %}">
+            {{ total_discrepancy }} <span style="font-size:0.8rem;font-weight:400;">units</span>
         </div>
+        <div class="stat-meta">Delivered minus sold</div>
     </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Reconciled</span>
+            <span class="stat-icon accent"><i class="fas fa-circle-check" aria-hidden="true"></i></span>
+        </div>
+        <div class="stat-value">{{ reconciled_count }}</div>
+        <div class="stat-meta">Records settled</div>
+    </div>
+</div>
+
+<div class="alert alert-info mb-3">
+    <i class="fas fa-lock mt-1" aria-hidden="true"></i>
+    <div><strong>Records are permanent.</strong> A pending discrepancy is settled through <em>Resolve</em> — written off, or corrected with a new entry.</div>
 </div>
 
 <div class="card">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0 dt-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Branch</th>
-                    <th>Product</th>
-                    <th>Delivery</th>
-                    <th class="text-end">Sold (Retailer)</th>
-                    <th class="text-end">Internal Delivery</th>
-                    <th class="text-end">
-                        Discrepancy
-                        <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top"
-                              title="Delivered − Sold. Positive = unsold stock remaining at branch. Negative = sold more than delivered (counting error)."
-                              style="cursor:help;color:#94a3b8;font-size:0.78rem;">
-                            <i class="fas fa-circle-question"></i>
-                        </span>
-                    </th>
-                    <th>Status</th>
-                    <th></th>
-                    <th>Resolution Note</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in reconciliations %}
-                <tr>
-                    <td style="color:#64748b;white-space:nowrap;">{{ r.sales_date|date:"M d, Y" }}</td>
-                    <td style="font-weight:500;">{{ r.branch }}</td>
-                    <td>{{ r.product }}</td>
-                    <td>{{ r.delivery_movement.reference_no|default:"—" }}</td>
-                    <td class="text-end">{{ r.sold_quantity }} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span></td>
-                    <td class="text-end">{{ r.internal_delivery_qty|default:"—" }}{% if r.internal_delivery_qty %} <span style="color:#94a3b8;font-size:0.78rem;">{{ r.product.unit }}</span>{% endif %}</td>
-                    <td class="text-end">
-                        {% if r.discrepancy and r.discrepancy < 0 %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;" title="Sold more than delivered — likely a counting error">{{ r.discrepancy }} over</span>
-                        {% elif r.discrepancy > 0 %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;" title="Unsold stock remaining at branch">+{{ r.discrepancy }} unsold</span>
-                        {% else %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">0</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not r.reconciled %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
-                        {% elif r.resolution_status == 'written_off' %}
-                            <span class="badge" style="background:#f1f5f9;color:#475569;">Written Off</span>
-                        {% elif r.resolution_status == 'corrected' %}
-                            <span class="badge" style="background:#f3e8ff;color:#7e22ce;">Corrected</span>
-                        {% else %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">Reconciled</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if not r.reconciled and r.discrepancy %}
-                            <a href="{% url 'reconciliation_resolve' r.pk %}"
-                               class="btn btn-outline-warning btn-sm" style="font-size:0.75rem;padding:2px 8px;">
-                                Resolve
-                            </a>
-                        {% endif %}
-                    </td>
-                    <td style="color:#94a3b8;font-size:0.8rem;">
-                        {% if r.resolution_note %}
-                            {% if r.resolution_note|length > 40 %}
-                            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-content="{{ r.resolution_note }}" style="cursor:help;border-bottom:1px dashed #cbd5e1;">{{ r.resolution_note|truncatechars:40 }}</span>
-                            {% else %}{{ r.resolution_note }}{% endif %}
-                        {% else %}—{% endif %}
-                    </td>
-                </tr>
+    <form method="get" class="filter-bar">
+        <div class="filter-field">
+            <label for="f-branch">Branch</label>
+            <select id="f-branch" name="branch" class="form-select form-select-sm">
+                <option value="">All branches</option>
+                {% for b in branches %}
+                <option value="{{ b.pk }}" {% if branch_id == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
-        {% if not reconciliations %}
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="fas fa-balance-scale" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-            No reconciliation data yet.
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-product">Product</label>
+            <select id="f-product" name="product" class="form-select form-select-sm">
+                <option value="">All products</option>
+                {% for p in products %}
+                <option value="{{ p.pk }}" {% if product_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-status">Status</label>
+            <select id="f-status" name="status" class="form-select form-select-sm">
+                <option value="">All statuses</option>
+                <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="reconciled" {% if status == 'reconciled' %}selected{% endif %}>Reconciled</option>
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-from">Date from</label>
+            <input type="date" id="f-from" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+        </div>
+        <div class="filter-field">
+            <label for="f-to">Date to</label>
+            <input type="date" id="f-to" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-filter" aria-hidden="true"></i> Filter
+            </button>
+            {% if has_filters %}
+            <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="card-body p-0">
+        {% if reconciliations %}
+        <div class="table-wrap">
+            <table class="table table-hover mb-0 dt-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Branch</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Delivery</th>
+                        <th scope="col" class="text-end">Sold</th>
+                        <th scope="col" class="text-end">Delivered</th>
+                        <th scope="col" class="text-end">
+                            Discrepancy
+                            <span tabindex="0" data-bs-toggle="tooltip" data-bs-placement="top"
+                                  title="Delivered − Sold. Positive = unsold stock remaining at branch. Negative = sold more than delivered (counting error)."
+                                  style="cursor:help;">
+                                <i class="fas fa-circle-question" aria-hidden="true"></i>
+                                <span class="visually-hidden">What is discrepancy?</span>
+                            </span>
+                        </th>
+                        <th scope="col">Status</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        <th scope="col">Resolution Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reconciliations %}
+                    <tr>
+                        <td class="num text-nowrap">{{ r.sales_date|date:"M d, Y" }}</td>
+                        <td class="strong">{{ r.branch }}</td>
+                        <td>{{ r.product }}</td>
+                        <td class="num">{{ r.delivery_movement.reference_no|default:"—" }}</td>
+                        <td class="text-end num">{{ r.sold_quantity }} <span class="text-muted">{{ r.product.unit }}</span></td>
+                        <td class="text-end num">{{ r.internal_delivery_qty|default:"—" }}{% if r.internal_delivery_qty %} <span class="text-muted">{{ r.product.unit }}</span>{% endif %}</td>
+                        <td class="text-end">
+                            {% if r.discrepancy and r.discrepancy < 0 %}
+                                <span class="badge badge-danger" title="Sold more than delivered — likely a counting error">{{ r.discrepancy }} over</span>
+                            {% elif r.discrepancy > 0 %}
+                                <span class="badge badge-warn" title="Unsold stock remaining at branch">+{{ r.discrepancy }} unsold</span>
+                            {% else %}
+                                <span class="badge badge-ok">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not r.reconciled %}
+                                <span class="badge badge-warn">Pending</span>
+                            {% elif r.resolution_status == 'written_off' %}
+                                <span class="badge badge-neutral">Written off</span>
+                            {% elif r.resolution_status == 'corrected' %}
+                                <span class="badge badge-info">Corrected</span>
+                            {% else %}
+                                <span class="badge badge-ok">Reconciled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not r.reconciled and r.discrepancy %}
+                            <a href="{% url 'reconciliation_resolve' r.pk %}" class="btn btn-outline-secondary btn-sm">Resolve</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if r.resolution_note %}
+                                {% if r.resolution_note|length > 40 %}
+                                <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top"
+                                      data-bs-content="{{ r.resolution_note }}" tabindex="0"
+                                      style="cursor:help;border-bottom:1px dashed var(--color-border);">{{ r.resolution_note|truncatechars:40 }}</span>
+                                {% else %}{{ r.resolution_note }}{% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-scale-balanced" aria-hidden="true"></i>
+            <div class="empty-title">{% if has_filters %}No records match these filters{% else %}No reconciliation data yet{% endif %}</div>
+            <div class="empty-hint">
+                {% if has_filters %}Try widening or clearing the filters.{% else %}Enter the sales a branch reported against a delivery to start reconciling.{% endif %}
+            </div>
+            {% if has_filters %}
+            <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+            {% else %}
+            <a href="{% url 'reconciliation_add' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus" aria-hidden="true"></i> Add Sales Data
+            </a>
+            {% endif %}
         </div>
         {% endif %}
     </div>

@@ -1,105 +1,110 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <div class="mb-3">
-            <h5 class="mb-0">{{ title }}</h5>
-            <p class="text-muted small mb-0">Enter retailer sales data for reconciliation. Records cannot be edited after saving.</p>
+<a href="{% url 'reconciliation_list' %}" class="back-link">
+    <i class="fas fa-arrow-left" style="font-size:0.7rem;" aria-hidden="true"></i> Reconciliation
+</a>
+
+<div class="form-narrow">
+    <div class="page-head">
+        <div>
+            <h1>{{ title }}</h1>
+            <p class="page-sub">Pick the delivery the branch is reporting on — product, branch and delivered quantity fill in automatically. Records cannot be edited after saving.</p>
         </div>
-        <div class="card">
-            <div class="card-body p-4">
-                <form method="post" id="recon-form">
-                    {% csrf_token %}
+    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Delivery</label>
-                        <select id="id_delivery_movement" name="delivery_movement" class="form-select" style="font-size:0.855rem;">
-                            <option value="">Select a delivery</option>
-                            {% for m in form.delivery_movement.field.queryset %}
-                            <option value="{{ m.pk }}" {% if form.delivery_movement.value == m.pk|stringformat:"s" %}selected{% endif %}>
-                                {{ m.reference_no|default:"No ref" }} — {{ m.product.name }} → {{ m.destination_branch|default:"?" }} ({{ m.quantity }} {{ m.product.unit }}, {{ m.created_at|date:"M d, Y" }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <div id="delivery-link-badge" class="mt-1" style="display:none;">
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.75rem;">
-                                <i class="fas fa-link" style="margin-right:4px;"></i>
-                                Delivery linked — Product, Branch, and Delivery Qty are auto-filled.
-                                <button type="button" id="clear-delivery" class="btn btn-sm p-0 ms-2" style="color:#1d4ed8;font-size:0.72rem;background:none;border:none;text-decoration:underline;">Clear</button>
-                            </span>
-                        </div>
-                        {% if form.delivery_movement.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.delivery_movement.errors }}</div>
-                        {% endif %}
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="recon-form" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger mb-3">
+                    <i class="fas fa-circle-exclamation mt-1" aria-hidden="true"></i>
+                    <div>{{ form.non_field_errors|striptags }}</div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label" for="id_delivery_movement">
+                        Delivery <span style="color:var(--color-destructive);" aria-hidden="true">*</span>
+                    </label>
+                    <select id="id_delivery_movement" name="delivery_movement" class="form-select">
+                        <option value="">Select a delivery</option>
+                        {% for m in form.delivery_movement.field.queryset %}
+                        <option value="{{ m.pk }}" {% if form.delivery_movement.value == m.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ m.reference_no|default:"No ref" }} — {{ m.product.name }} → {{ m.destination_branch|default:"?" }} ({{ m.quantity }} {{ m.product.unit }}, {{ m.created_at|date:"M d, Y" }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div id="delivery-link-badge" class="mt-2" style="display:none;">
+                        <span class="badge badge-info" style="display:inline-flex;align-items:center;gap:6px;">
+                            <i class="fas fa-link" aria-hidden="true"></i>
+                            Delivery linked — product, branch and delivered qty are auto-filled.
+                            <button type="button" id="clear-delivery" class="btn-link-quiet"
+                                    style="background:none;border:none;text-decoration:underline;color:inherit;padding:0;">Clear</button>
+                        </span>
                     </div>
+                    {% if form.delivery_movement.errors %}<div class="field-error">{{ form.delivery_movement.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    <hr style="margin:0 0 16px;border-color:#f1f5f9;">
+                <hr style="border-color:var(--color-border-soft);margin:var(--space-xl) 0;">
 
-                    <div class="mb-3" id="field-product">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Product</label>
-                        <select id="id_product" name="product" class="form-select" style="font-size:0.855rem;">
-                            <option value="">Select a product</option>
-                            {% for p in form.product.field.queryset %}
-                            <option value="{{ p.pk }}" {% if form.product.value == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="hidden" id="hidden_product" name="product" disabled>
-                        {% if form.product.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.product.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="mb-3" id="field-product">
+                    <label class="form-label" for="id_product">Product</label>
+                    <select id="id_product" name="product" class="form-select">
+                        <option value="">Select a product</option>
+                        {% for p in form.product.field.queryset %}
+                        <option value="{{ p.pk }}" {% if form.product.value == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" id="hidden_product" name="product" disabled>
+                    {% if form.product.errors %}<div class="field-error">{{ form.product.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    <div class="mb-3" id="field-branch">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Branch</label>
-                        <select id="id_branch" name="branch" class="form-select" style="font-size:0.855rem;">
-                            <option value="">Select a branch</option>
-                            {% for b in form.branch.field.queryset %}
-                            <option value="{{ b.pk }}" {% if form.branch.value == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <input type="hidden" id="hidden_branch" name="branch" disabled>
-                        {% if form.branch.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.branch.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="mb-3" id="field-branch">
+                    <label class="form-label" for="id_branch">Branch</label>
+                    <select id="id_branch" name="branch" class="form-select">
+                        <option value="">Select a branch</option>
+                        {% for b in form.branch.field.queryset %}
+                        <option value="{{ b.pk }}" {% if form.branch.value == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" id="hidden_branch" name="branch" disabled>
+                    {% if form.branch.errors %}<div class="field-error">{{ form.branch.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    <div class="mb-3" id="field-delivery-qty">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Quantity We Delivered</label>
-                        <input type="number" id="id_internal_delivery_qty" name="internal_delivery_qty" value="{{ form.internal_delivery_qty.value|default:'' }}" class="form-control" style="font-size:0.855rem;" min="0">
-                        {% if form.internal_delivery_qty.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.internal_delivery_qty.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="mb-3" id="field-delivery-qty">
+                    <label class="form-label" for="id_internal_delivery_qty">Quantity We Delivered</label>
+                    <input type="number" id="id_internal_delivery_qty" name="internal_delivery_qty"
+                           value="{{ form.internal_delivery_qty.value|default:'' }}" class="form-control" min="0">
+                    {% if form.internal_delivery_qty.errors %}<div class="field-error">{{ form.internal_delivery_qty.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Sales Date</label>
-                        <input type="date" id="id_sales_date" name="sales_date" value="{{ form.sales_date.value|default:'' }}" class="form-control" style="font-size:0.855rem;">
-                        {% if form.sales_date.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.sales_date.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label" for="id_sales_date">
+                        Sales Date <span style="color:var(--color-destructive);" aria-hidden="true">*</span>
+                    </label>
+                    <input type="date" id="id_sales_date" name="sales_date" value="{{ form.sales_date.value|default:'' }}" class="form-control">
+                    {% if form.sales_date.errors %}<div class="field-error">{{ form.sales_date.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label" style="font-size:0.855rem;font-weight:500;">Sold Quantity</label>
-                        <input type="number" id="id_sold_quantity" name="sold_quantity" value="{{ form.sold_quantity.value|default:'' }}" class="form-control" style="font-size:0.855rem;" min="0">
-                        {% if form.sold_quantity.errors %}
-                        <div class="text-danger" style="font-size:0.8rem;">{{ form.sold_quantity.errors }}</div>
-                        {% endif %}
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label" for="id_sold_quantity">
+                        Sold Quantity <span style="color:var(--color-destructive);" aria-hidden="true">*</span>
+                    </label>
+                    <input type="number" id="id_sold_quantity" name="sold_quantity" value="{{ form.sold_quantity.value|default:'' }}" class="form-control" min="0">
+                    <div class="form-text">Units the branch reported as sold. Cannot exceed the delivered quantity.</div>
+                    {% if form.sold_quantity.errors %}<div class="field-error">{{ form.sold_quantity.errors|striptags }}</div>{% endif %}
+                </div>
 
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger" style="font-size:0.855rem;">{{ form.non_field_errors }}</div>
-                    {% endif %}
-
-                    <div class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-save"></i> Review & Save
-                        </button>
-                        <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </form>
-            </div>
+                <div class="d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-arrow-right" aria-hidden="true"></i> Review &amp; Save
+                    </button>
+                    <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -116,15 +121,15 @@ const clearBtn = document.getElementById('clear-delivery');
 
 function lockFields(lock) {
     productSelect.disabled = lock;
-    productSelect.style.background = lock ? '#f8fafc' : '';
+    productSelect.style.background = lock ? 'var(--color-muted)' : '';
     document.getElementById('hidden_product').disabled = !lock;
 
     branchSelect.disabled = lock;
-    branchSelect.style.background = lock ? '#f8fafc' : '';
+    branchSelect.style.background = lock ? 'var(--color-muted)' : '';
     document.getElementById('hidden_branch').disabled = !lock;
 
     deliveryQtyInput.readOnly = lock;
-    deliveryQtyInput.style.background = lock ? '#f8fafc' : '';
+    deliveryQtyInput.style.background = lock ? 'var(--color-muted)' : '';
 
     badge.style.display = lock ? 'block' : 'none';
 }

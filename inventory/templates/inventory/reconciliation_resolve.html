@@ -2,77 +2,80 @@
 {% load crispy_forms_tags %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="mb-3">
-            <h5 class="mb-0">Resolve Discrepancy</h5>
-            <p class="text-muted small mb-0">Record how this discrepancy was settled. This cannot be undone.</p>
-        </div>
+<a href="{% url 'reconciliation_list' %}" class="back-link">
+    <i class="fas fa-arrow-left" style="font-size:0.7rem;" aria-hidden="true"></i> Reconciliation
+</a>
 
-        <!-- Record summary -->
-        <div class="card mb-3" style="border-left:3px solid #f59e0b;">
-            <div class="card-body p-3">
-                <div class="row g-3 mb-3">
-                    <div class="col-6">
-                        <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Branch</div>
-                        <div style="font-size:0.9rem;font-weight:600;color:#0f172a;">{{ record.branch }}</div>
-                    </div>
-                    <div class="col-6">
-                        <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Product</div>
-                        <div style="font-size:0.9rem;font-weight:600;color:#0f172a;">{{ record.product.name }}</div>
-                    </div>
-                    <div class="col-6">
-                        <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Sales Date</div>
-                        <div style="font-size:0.9rem;font-weight:600;color:#0f172a;">{{ record.sales_date|date:"M d, Y" }}</div>
-                    </div>
-                    <div class="col-6">
-                        <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Delivery Reference</div>
-                        <div style="font-size:0.9rem;font-weight:600;color:#0f172a;">{{ record.delivery_movement.reference_no|default:"—" }}</div>
-                    </div>
+<div class="form-narrow">
+    <div class="page-head">
+        <div>
+            <h1>Resolve Discrepancy</h1>
+            <p class="page-sub">Record how this discrepancy was settled. This cannot be undone.</p>
+        </div>
+    </div>
+
+    <div class="card mb-3" style="border-left:3px solid var(--color-warning);">
+        <div class="card-body">
+            <div class="kv mb-3">
+                <div class="kv-item">
+                    <span class="kv-label">Branch</span>
+                    <span class="kv-value">{{ record.branch }}</span>
                 </div>
-                <div style="border-top:1px solid #f1f5f9;padding-top:12px;">
-                    <div class="row g-2 text-center">
-                        <div class="col-4">
-                            <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">We Delivered</div>
-                            <div style="font-size:1.3rem;font-weight:700;color:#0f172a;line-height:1.2;">{{ record.internal_delivery_qty|default:"—" }}</div>
-                            <div style="font-size:0.72rem;color:#94a3b8;">{{ record.product.unit }}</div>
-                        </div>
-                        <div class="col-4">
-                            <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Branch Sold</div>
-                            <div style="font-size:1.3rem;font-weight:700;color:#0f172a;line-height:1.2;">{{ record.sold_quantity }}</div>
-                            <div style="font-size:0.72rem;color:#94a3b8;">{{ record.product.unit }}</div>
-                        </div>
-                        <div class="col-4">
-                            <div style="font-size:0.7rem;font-weight:500;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">Discrepancy</div>
-                            {% if discrepancy > 0 %}
-                            <div style="font-size:1.3rem;font-weight:700;color:#92400e;line-height:1.2;">+{{ discrepancy }}</div>
-                            <div style="font-size:0.72rem;color:#92400e;">unsold</div>
-                            {% elif discrepancy < 0 %}
-                            <div style="font-size:1.3rem;font-weight:700;color:#dc2626;line-height:1.2;">{{ discrepancy }}</div>
-                            <div style="font-size:0.72rem;color:#dc2626;">over</div>
-                            {% else %}
-                            <div style="font-size:1.3rem;font-weight:700;color:#16a34a;line-height:1.2;">0</div>
-                            <div style="font-size:0.72rem;color:#16a34a;">matched</div>
-                            {% endif %}
-                        </div>
-                    </div>
+                <div class="kv-item">
+                    <span class="kv-label">Product</span>
+                    <span class="kv-value">{{ record.product.name }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Sales Date</span>
+                    <span class="kv-value num">{{ record.sales_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Delivery Reference</span>
+                    <span class="kv-value num">{{ record.delivery_movement.reference_no|default:"—" }}</span>
+                </div>
+            </div>
+
+            <div class="stat-grid mb-0" style="border-top:1px solid var(--color-border-soft);padding-top:var(--space-xl);gap:var(--space-lg);">
+                <div>
+                    <div class="stat-label">We Delivered</div>
+                    <div class="stat-value" style="font-size:1.25rem;">{{ record.internal_delivery_qty|default:"—" }}</div>
+                    <div class="stat-meta">{{ record.product.unit }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Branch Sold</div>
+                    <div class="stat-value" style="font-size:1.25rem;">{{ record.sold_quantity }}</div>
+                    <div class="stat-meta">{{ record.product.unit }}</div>
+                </div>
+                <div>
+                    <div class="stat-label">Discrepancy</div>
+                    {% if discrepancy > 0 %}
+                    <div class="stat-value warn" style="font-size:1.25rem;">+{{ discrepancy }}</div>
+                    <div class="stat-meta">unsold at branch</div>
+                    {% elif discrepancy < 0 %}
+                    <div class="stat-value danger" style="font-size:1.25rem;">{{ discrepancy }}</div>
+                    <div class="stat-meta">over-sold</div>
+                    {% else %}
+                    <div class="stat-value" style="font-size:1.25rem;">0</div>
+                    <div class="stat-meta">matched</div>
+                    {% endif %}
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="card">
-            <div class="card-body p-4">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <div class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-check"></i> Mark as Resolved
-                        </button>
-                        <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                    </div>
-                </form>
-            </div>
+    <div class="card">
+        <div class="card-header"><span>Resolution</span></div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check" aria-hidden="true"></i> Mark as Resolved
+                    </button>
+                    <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -84,11 +87,7 @@ const resolutionSelect = document.getElementById('id_resolution_status');
 const correctedWrap = document.getElementById('div_id_corrected_sold_quantity');
 
 function toggleCorrected() {
-    if (resolutionSelect.value === 'corrected') {
-        correctedWrap.style.display = '';
-    } else {
-        correctedWrap.style.display = 'none';
-    }
+    correctedWrap.style.display = resolutionSelect.value === 'corrected' ? '' : 'none';
 }
 
 resolutionSelect.addEventListener('change', toggleCorrected);

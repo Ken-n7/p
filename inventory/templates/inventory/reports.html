@@ -1,133 +1,140 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Reports & Analysis</h5>
-        <p class="text-muted small mb-0">Loss analysis, delivery summaries, and reconciliation status.</p>
+        <h1>Reports &amp; Analysis</h1>
+        <p class="page-sub">Loss analysis, delivery summaries, and reconciliation status.</p>
     </div>
 </div>
 
-<!-- KPI Strip -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Total Stock Lost</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:#dc2626;line-height:1.1;">
-                        {{ total_loss_qty }} <span style="font-size:0.75rem;font-weight:400;color:#94a3b8;">units</span>
-                    </div>
-                </div>
-            </div>
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Stock Lost</span>
+            <span class="stat-icon danger"><i class="fas fa-circle-exclamation" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value {% if total_loss_qty > 0 %}danger{% endif %}">
+            {{ total_loss_qty }} <span style="font-size:0.8rem;font-weight:400;">units</span>
+        </div>
+        <div class="stat-meta">Warehouse, transit and unsold at branch</div>
     </div>
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-check-circle" style="color:#16a34a;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Reconciled</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:#0f172a;line-height:1.1;">{{ reconciled }}</div>
-                </div>
-            </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Reconciled</span>
+            <span class="stat-icon accent"><i class="fas fa-circle-check" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value">{{ reconciled }}</div>
+        <div class="stat-meta">Records settled</div>
     </div>
-    <div class="col-sm-4">
-        <div class="card">
-            <div class="card-body d-flex align-items-center gap-3 p-3">
-                <div style="width:38px;height:38px;border-radius:9px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-clock" style="color:#d97706;font-size:0.85rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.72rem;font-weight:500;">Pending Reconciliation</div>
-                    <div style="font-size:1.4rem;font-weight:700;color:{% if unreconciled > 0 %}#d97706{% else %}#0f172a{% endif %};line-height:1.1;">{{ unreconciled }}</div>
-                </div>
-            </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Pending Reconciliation</span>
+            <span class="stat-icon warn"><i class="fas fa-clock" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value {% if unreconciled > 0 %}warn{% endif %}">{{ unreconciled }}</div>
+        <div class="stat-meta">Awaiting resolution</div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Loss Analysis -->
-    <div class="col-lg-6">
+<div class="row g-3">
+    <div class="col-xl-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-exclamation-circle" style="color:#dc2626;margin-right:6px;"></i> Loss Analysis by Product
+                <span>Loss Analysis by Product</span>
+                <span class="card-hint">units lost</span>
             </div>
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>SKU</th>
-                            <th class="text-end">Units Lost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in product_losses %}
-                        <tr>
-                            <td style="font-weight:500;">{{ row.product__name }}</td>
-                            <td><code>{{ row.product__sku }}</code></td>
-                            <td class="text-end">
-                                <span style="font-weight:700;color:#dc2626;">{{ row.total_lost }}</span>
-                                <span style="color:#94a3b8;font-size:0.78rem;"> {{ row.product__unit }}</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        {% for row in unreturned_unsold %}
-                        <tr>
-                            <td style="font-weight:500;">{{ row.product__name }}</td>
-                            <td><code>{{ row.product__sku }}</code></td>
-                            <td class="text-end">
-                                <span style="font-weight:700;color:#92400e;">{{ row.total_lost }}</span>
-                                <span style="color:#94a3b8;font-size:0.78rem;"> {{ row.product__unit }}</span>
-                                <span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.65rem;margin-left:4px;">Unsold at Branch</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        {% if not product_losses %}
-                        <tr><td colspan="3" class="text-center py-4" style="color:#94a3b8;">No losses recorded.</td></tr>
-                        {% endif %}
-                        {% endfor %}
-                    </tbody>
-                </table>
+                {% if product_losses or unreturned_unsold %}
+                <div class="table-wrap">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">SKU</th>
+                                <th scope="col">Source</th>
+                                <th scope="col" class="text-end">Units Lost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in product_losses %}
+                            <tr>
+                                <td class="strong">{{ row.product__name }}</td>
+                                <td><code>{{ row.product__sku }}</code></td>
+                                <td><span class="badge badge-danger">Warehouse / transit</span></td>
+                                <td class="text-end num strong" style="color:var(--color-destructive);">
+                                    {{ row.total_lost }} <span class="text-muted">{{ row.product__unit }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% for row in unreturned_unsold %}
+                            <tr>
+                                <td class="strong">{{ row.product__name }}</td>
+                                <td><code>{{ row.product__sku }}</code></td>
+                                <td><span class="badge badge-warn">Unsold at branch</span></td>
+                                <td class="text-end num strong" style="color:var(--color-warning);">
+                                    {{ row.total_lost }} <span class="text-muted">{{ row.product__unit }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty">
+                    <i class="fas fa-circle-check" aria-hidden="true"></i>
+                    <div class="empty-title">No losses recorded</div>
+                    <div class="empty-hint">Spoilage, transit losses and unsold stock will be broken down here.</div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Deliveries by Branch -->
-    <div class="col-lg-6">
+    <div class="col-xl-6">
         <div class="card h-100">
             <div class="card-header">
-                <i class="fas fa-truck" style="color:#1d4ed8;margin-right:6px;"></i> Deliveries by Branch
+                <span>Deliveries by Branch</span>
+                <span class="card-hint">all time</span>
             </div>
             <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>Branch</th>
-                            <th class="text-end">Deliveries</th>
-                            <th class="text-end">Total Qty</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in deliveries_by_branch %}
-                        <tr>
-                            <td style="font-weight:500;">{{ row.destination_branch__name|default:"(unspecified)" }}</td>
-                            <td class="text-end" style="color:#64748b;">{{ row.total_movements }}</td>
-                            <td class="text-end" style="font-weight:700;">{{ row.total_qty }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="3" class="text-center py-4" style="color:#94a3b8;">No deliveries recorded.</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                {% if deliveries_by_branch %}
+                <div class="table-wrap">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Branch</th>
+                                <th scope="col" class="text-end">Deliveries</th>
+                                <th scope="col" class="text-end">Total Qty</th>
+                                <th scope="col" style="width:110px;">Share</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in deliveries_by_branch %}
+                            <tr>
+                                <td class="strong">{{ row.destination_branch__name|default:"(unspecified)" }}</td>
+                                <td class="text-end num">{{ row.total_movements }}</td>
+                                <td class="text-end num strong">{{ row.total_qty }}</td>
+                                <td>
+                                    <div class="bar-track" role="img"
+                                         aria-label="{{ row.total_qty }} units, {% widthratio row.total_qty deliveries_by_branch.0.total_qty 100 %} percent of the top branch">
+                                        <div class="bar-fill" style="width:{% widthratio row.total_qty deliveries_by_branch.0.total_qty 100 %}%;"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty">
+                    <i class="fas fa-truck" aria-hidden="true"></i>
+                    <div class="empty-title">No deliveries recorded</div>
+                    <div class="empty-hint">Record a Delivery Out movement to see branch volumes.</div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

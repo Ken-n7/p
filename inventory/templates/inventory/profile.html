@@ -1,114 +1,102 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="mb-4">
-    <h5 class="mb-0">My Profile</h5>
-    <p class="text-muted small mb-0">Update your personal information or change your password.</p>
+<div class="page-head">
+    <div>
+        <h1>My Profile</h1>
+        <p class="page-sub">Update your personal information or change your password.</p>
+    </div>
 </div>
 
-<!-- Identity strip -->
-<div class="card mb-4">
-    <div class="card-body d-flex align-items-center gap-3 p-4">
-        <div style="width:52px;height:52px;border-radius:50%;background:#4f46e5;color:#fff;
-                    display:flex;align-items:center;justify-content:center;
-                    font-size:1.3rem;font-weight:700;flex-shrink:0;">
+<div class="card mb-3">
+    <div class="card-body d-flex align-items-center gap-3">
+        <span class="user-avatar" style="width:48px;height:48px;font-size:1.15rem;" aria-hidden="true">
             {{ request.user.username|first|upper }}
-        </div>
+        </span>
         <div>
-            <div style="font-weight:700;font-size:1rem;color:#0f172a;">{{ request.user.username }}</div>
-            <div class="mt-1">
+            <div style="font-weight:600;font-size:0.95rem;color:var(--color-foreground);">
+                {{ request.user.get_full_name|default:request.user.username }}
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-1">
+                <span class="text-muted" style="font-size:0.78rem;">{{ request.user.username }}</span>
                 {% if profile %}
                     {% if profile.role == 'admin' %}
-                        <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ profile.get_role_display }}</span>
+                        <span class="badge badge-danger">{{ profile.get_role_display }}</span>
                     {% elif profile.role == 'warehouse' %}
-                        <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ profile.get_role_display }}</span>
+                        <span class="badge badge-info">{{ profile.get_role_display }}</span>
                     {% elif profile.role == 'sales' %}
-                        <span class="badge" style="background:#dcfce7;color:#15803d;">{{ profile.get_role_display }}</span>
+                        <span class="badge badge-ok">{{ profile.get_role_display }}</span>
                     {% else %}
-                        <span class="badge" style="background:#f3e8ff;color:#7c3aed;">{{ profile.get_role_display }}</span>
+                        <span class="badge badge-neutral">{{ profile.get_role_display }}</span>
                     {% endif %}
                 {% elif request.user.is_superuser %}
-                    <span class="badge" style="background:#fef3c7;color:#92400e;">Superuser</span>
+                    <span class="badge badge-warn">Superuser</span>
                 {% else %}
-                    <span class="badge" style="background:#f1f5f9;color:#64748b;">No Role</span>
+                    <span class="badge badge-neutral">No role</span>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Personal information -->
-    <div class="col-md-6">
+<div class="row g-3">
+    <div class="col-lg-6">
         <div class="card h-100">
-            <div class="card-header">
-                <i class="fas fa-user" style="color:#4f46e5;margin-right:6px;"></i> Personal Information
-            </div>
-            <div class="card-body p-4">
+            <div class="card-header"><span>Personal Information</span></div>
+            <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
                     <input type="hidden" name="form_type" value="profile">
+
+                    {% if profile_form.non_field_errors %}
+                    <div class="alert alert-danger mb-3">
+                        <i class="fas fa-circle-exclamation mt-1" aria-hidden="true"></i>
+                        <div>{{ profile_form.non_field_errors|striptags }}</div>
+                    </div>
+                    {% endif %}
 
                     {% for field in profile_form %}
                     <div class="mb-3">
                         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {{ field }}
-                        {% if field.errors %}
-                            {% for error in field.errors %}
-                            <div class="text-danger" style="font-size:0.78rem;margin-top:4px;">{{ error }}</div>
-                            {% endfor %}
-                        {% endif %}
+                        {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
                     </div>
                     {% endfor %}
 
-                    {% if profile_form.non_field_errors %}
-                    <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.82rem;">
-                        {% for error in profile_form.non_field_errors %}{{ error }}{% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fas fa-save"></i> Save Changes
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-floppy-disk" aria-hidden="true"></i> Save Changes
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Change password -->
-    <div class="col-md-6">
+    <div class="col-lg-6">
         <div class="card h-100">
-            <div class="card-header">
-                <i class="fas fa-lock" style="color:#4f46e5;margin-right:6px;"></i> Change Password
-            </div>
-            <div class="card-body p-4">
+            <div class="card-header"><span>Change Password</span></div>
+            <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
                     <input type="hidden" name="form_type" value="password">
+
+                    {% if password_form.non_field_errors %}
+                    <div class="alert alert-danger mb-3">
+                        <i class="fas fa-circle-exclamation mt-1" aria-hidden="true"></i>
+                        <div>{{ password_form.non_field_errors|striptags }}</div>
+                    </div>
+                    {% endif %}
 
                     {% for field in password_form %}
                     <div class="mb-3">
                         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                         {{ field }}
-                        {% if field.help_text %}
-                        <div style="font-size:0.74rem;color:#94a3b8;margin-top:3px;">{{ field.help_text }}</div>
-                        {% endif %}
-                        {% if field.errors %}
-                            {% for error in field.errors %}
-                            <div class="text-danger" style="font-size:0.78rem;margin-top:4px;">{{ error }}</div>
-                            {% endfor %}
-                        {% endif %}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+                        {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
                     </div>
                     {% endfor %}
 
-                    {% if password_form.non_field_errors %}
-                    <div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.82rem;">
-                        {% for error in password_form.non_field_errors %}{{ error }}{% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary btn-sm">
-                        <i class="fas fa-key"></i> Change Password
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-key" aria-hidden="true"></i> Change Password
                     </button>
                 </form>
             </div>

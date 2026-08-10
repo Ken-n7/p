@@ -1,271 +1,244 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="mb-4">
-    <h5 class="mb-0">Good to see you, {{ request.user.get_full_name|default:request.user.username }}.</h5>
-    <p class="text-muted small mb-0">Here's what's happening with your inventory today.</p>
+<div class="page-head">
+    <div>
+        <h1>Good to see you, {{ request.user.get_full_name|default:request.user.username }}.</h1>
+        <p class="page-sub">Here's what's happening with your inventory today.</p>
+    </div>
+    {% if request.user.is_superuser or request.user.profile.role != 'accountant' %}
+    <div class="page-head-actions">
+        <a href="{% url 'movement_create' %}" class="btn btn-success">
+            <i class="fas fa-plus" aria-hidden="true"></i> Record Movement
+        </a>
+    </div>
+    {% endif %}
 </div>
 
-<!-- KPI Cards -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-box" style="color:#4f46e5;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Total Products</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:#0f172a;">{{ total_products }}</div>
-                </div>
-            </div>
-            <div style="padding:0 16px 12px;">
-                <a href="{% url 'product_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
-                    View all products <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
-                </a>
-            </div>
+<!-- ── KPI tiles ─────────────────────────────────────── -->
+<div class="stat-grid">
+    <a href="{% url 'product_list' %}" class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Products</span>
+            <span class="stat-icon accent"><i class="fas fa-box" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value">{{ total_products }}</div>
+        <div class="stat-meta">View all products <i class="fas fa-arrow-right" style="font-size:0.62rem;" aria-hidden="true"></i></div>
+    </a>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Low Stock</span>
+            <span class="stat-icon warn"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></span>
+        </div>
+        <div class="stat-value {% if low_stock_count > 0 %}warn{% endif %}">{{ low_stock_count }}</div>
+        <div class="stat-meta">Below 10 units</div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Low Stock</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if low_stock_count > 0 %}#d97706{% else %}#0f172a{% endif %};">{{ low_stock_count }}</div>
-                    <div style="font-size:0.7rem;color:#94a3b8;">Below 10 units</div>
-                </div>
-            </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Near Expiry</span>
+            <span class="stat-icon danger"><i class="fas fa-clock" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value {% if near_expiry_count > 0 %}danger{% endif %}">{{ near_expiry_count }}</div>
+        <div class="stat-meta">Within 7 days</div>
     </div>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-clock" style="color:#dc2626;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Near Expiry</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if near_expiry_count > 0 %}#dc2626{% else %}#0f172a{% endif %};">{{ near_expiry_count }}</div>
-                    <div style="font-size:0.7rem;color:#94a3b8;">Within 7 days</div>
-                </div>
-            </div>
+    <a href="{% url 'movement_list' %}" class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Movements</span>
+            <span class="stat-icon info"><i class="fas fa-right-left" aria-hidden="true"></i></span>
         </div>
-    </div>
+        <div class="stat-value">{{ total_movements }}</div>
+        <div class="stat-meta">View all movements <i class="fas fa-arrow-right" style="font-size:0.62rem;" aria-hidden="true"></i></div>
+    </a>
 
-    <div class="col-sm-6 col-xl-3">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-exchange-alt" style="color:#16a34a;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Total Movements</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:#0f172a;">{{ total_movements }}</div>
-                </div>
-            </div>
-            <div style="padding:0 16px 12px;">
-                <a href="{% url 'movement_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
-                    View all movements <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
-                </a>
-            </div>
+    {% if can_see_recon %}
+    <a href="{% url 'reconciliation_list' %}" class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Pending Reconciliation</span>
+            <span class="stat-icon warn"><i class="fas fa-hourglass-half" aria-hidden="true"></i></span>
         </div>
+        <div class="stat-value {% if pending_recon_count > 0 %}warn{% endif %}">{{ pending_recon_count }}</div>
+        <div class="stat-meta">Unresolved records</div>
+    </a>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Pending Discrepancy</span>
+            <span class="stat-icon danger"><i class="fas fa-scale-unbalanced" aria-hidden="true"></i></span>
+        </div>
+        <div class="stat-value {% if pending_discrepancy > 0 %}danger{% endif %}">{{ pending_discrepancy }}</div>
+        <div class="stat-meta">Unsold units unaccounted</div>
     </div>
+    {% endif %}
 </div>
 
-{% if can_see_recon %}
-<!-- Reconciliation KPIs -->
-<div class="row g-3 mb-4">
-    <div class="col-sm-6">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-hourglass-half" style="color:#d97706;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Pending Reconciliation</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if pending_recon_count > 0 %}#d97706{% else %}#0f172a{% endif %};">{{ pending_recon_count }}</div>
-                    <div style="font-size:0.7rem;color:#94a3b8;">Unresolved records</div>
-                </div>
-            </div>
-            <div style="padding:0 16px 12px;">
-                <a href="{% url 'reconciliation_list' %}" style="font-size:0.75rem;color:#4f46e5;text-decoration:none;font-weight:500;">
-                    View reconciliation <i class="fas fa-arrow-right" style="font-size:0.65rem;"></i>
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-sm-6">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center gap-3 p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <i class="fas fa-scale-unbalanced" style="color:#dc2626;font-size:1rem;"></i>
-                </div>
-                <div>
-                    <div class="text-muted" style="font-size:0.75rem;font-weight:500;">Pending Discrepancy</div>
-                    <div style="font-size:1.75rem;font-weight:700;line-height:1.1;color:{% if pending_discrepancy > 0 %}#dc2626{% else %}#0f172a{% endif %};">{{ pending_discrepancy }}</div>
-                    <div style="font-size:0.7rem;color:#94a3b8;">Unsold units unaccounted</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Alert Banners -->
+<!-- ── Alerts ────────────────────────────────────────── -->
 {% if low_stock %}
-<div class="alert mb-3" style="background:#fffbeb;border-left:3px solid #d97706;border-radius:10px;padding:12px 16px;">
-    <div class="d-flex align-items-center gap-2 mb-1">
-        <i class="fas fa-exclamation-triangle" style="color:#d97706;font-size:0.8rem;"></i>
-        <strong style="font-size:0.82rem;color:#92400e;">Low Stock Alert</strong>
+<div class="alert alert-warning mb-3">
+    <i class="fas fa-triangle-exclamation mt-1" aria-hidden="true"></i>
+    <div>
+        <strong>Low stock</strong> — {{ low_stock_count }} product{{ low_stock_count|pluralize }} below 10 units.
+        <ul class="mb-0 mt-1 ps-3">
+            {% for item in low_stock %}
+            <li>{{ item.name }} <span class="num">({{ item.sku }})</span> — <span class="num">{{ item.quantity }} {{ item.unit }}</span> remaining</li>
+            {% endfor %}
+        </ul>
     </div>
-    <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#78350f;">
-        {% for item in low_stock %}
-        <li><strong>{{ item.name }}</strong> ({{ item.sku }}) — {{ item.quantity }} {{ item.unit }} remaining</li>
-        {% endfor %}
-    </ul>
 </div>
 {% endif %}
 
 {% if near_expiry %}
-<div class="alert mb-4" style="background:#fff1f2;border-left:3px solid #dc2626;border-radius:10px;padding:12px 16px;">
-    <div class="d-flex align-items-center gap-2 mb-1">
-        <i class="fas fa-clock" style="color:#dc2626;font-size:0.8rem;"></i>
-        <strong style="font-size:0.82rem;color:#991b1b;">Near Expiry Warning</strong>
+<div class="alert alert-danger mb-3">
+    <i class="fas fa-clock mt-1" aria-hidden="true"></i>
+    <div>
+        <strong>Near expiry</strong> — {{ near_expiry_count }} batch{{ near_expiry_count|pluralize:"es" }} expiring within 7 days.
+        <ul class="mb-0 mt-1 ps-3">
+            {% for item in near_expiry %}
+            <li>{{ item.product.name }} <span class="num">(Batch {{ item.batch_number|default:"—" }})</span> — expires <span class="num">{{ item.expiration_date }}</span></li>
+            {% endfor %}
+        </ul>
     </div>
-    <ul class="mb-0 ps-4" style="font-size:0.82rem;color:#7f1d1d;">
-        {% for item in near_expiry %}
-        <li><strong>{{ item.product.name }}</strong> (Batch: {{ item.batch_number|default:"—" }}) — Expires {{ item.expiration_date }}</li>
-        {% endfor %}
-    </ul>
 </div>
 {% endif %}
 
-<!-- Deliveries Chart + Recent Movements -->
-<div class="row g-4 mb-4">
-    <div class="col-lg-5">
-        <div class="card h-100">
+<!-- ── Chart + recent activity ───────────────────────── -->
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card">
             <div class="card-header">
-                <i class="fas fa-truck" style="color:#1d4ed8;margin-right:6px;"></i> Deliveries by Branch
+                <span>Deliveries by Branch</span>
+                <span class="card-hint">total units</span>
             </div>
-            <div class="card-body d-flex align-items-center justify-content-center" style="min-height:220px;">
+            <div class="card-body">
                 {% if deliveries_by_branch %}
-                <canvas id="branchChart"></canvas>
+                <div class="chart-box">
+                    <canvas id="branchChart" role="img" aria-label="Bar chart of total units delivered per branch"></canvas>
+                </div>
                 {% else %}
-                <div class="text-center" style="color:#94a3b8;">
-                    <i class="fas fa-chart-bar" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-                    No delivery data yet.
+                <div class="empty">
+                    <i class="fas fa-chart-column" aria-hidden="true"></i>
+                    <div class="empty-title">No delivery data yet</div>
+                    <div class="empty-hint">Record a delivery movement to see branch volumes here.</div>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <div class="col-lg-7">
-<!-- Recent Movements card starts here -->
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-history" style="color:#64748b;margin-right:6px;"></i>Recent Stock Movements</span>
-        {% if request.user.is_superuser or request.user.profile.role != 'accountant' %}
-        <a href="{% url 'movement_create' %}" class="btn btn-sm btn-success">
-            <i class="fas fa-plus"></i> Record Movement
-        </a>
-        {% endif %}
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header">
+                <span>Recent Stock Movements</span>
+                <a href="{% url 'movement_list' %}" class="card-hint">View all</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-wrap">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Date</th>
+                                <th scope="col">Product</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Qty</th>
+                                <th scope="col">Branch / Ref</th>
+                                <th scope="col">By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in recent_movements %}
+                            <tr>
+                                <td class="text-nowrap num">{{ m.created_at|date:"M d, H:i" }}</td>
+                                <td class="strong">{{ m.product.name }}</td>
+                                <td>
+                                    {% if m.movement_type == 'production_in' %}
+                                        <span class="badge badge-ok">{{ m.get_movement_type_display }}</span>
+                                    {% elif m.movement_type == 'delivery_out' %}
+                                        <span class="badge badge-info">{{ m.get_movement_type_display }}</span>
+                                    {% elif m.movement_type == 'loss' %}
+                                        <span class="badge badge-danger">{{ m.get_movement_type_display }}</span>
+                                    {% else %}
+                                        <span class="badge badge-neutral">{{ m.get_movement_type_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="num strong text-nowrap">{{ m.quantity }} <span class="text-muted">{{ m.product.unit }}</span></td>
+                                <td>
+                                    {{ m.destination_branch|default:"—" }}
+                                    {% if m.reference_no %}<span class="cell-sub num">{{ m.reference_no }}</span>{% endif %}
+                                </td>
+                                <td>{{ m.created_by.username|default:"—" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty">
+                                        <i class="fas fa-inbox" aria-hidden="true"></i>
+                                        <div class="empty-title">No movements recorded yet</div>
+                                        <div class="empty-hint">Production, deliveries and losses will appear here.</div>
+                                        {% if request.user.is_superuser or request.user.profile.role != 'accountant' %}
+                                        <a href="{% url 'movement_create' %}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-plus" aria-hidden="true"></i> Record Movement
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Qty</th>
-                    <th>Branch / Ref</th>
-                    <th>By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in recent_movements %}
-                <tr>
-                    <td class="text-nowrap" style="color:#64748b;">{{ m.created_at|date:"M d, Y H:i" }}</td>
-                    <td><span style="font-weight:500;">{{ m.product.name }}</span></td>
-                    <td>
-                        {% if m.movement_type == 'production_in' %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'delivery_out' %}
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'loss' %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ m.get_movement_type_display }}</span>
-                        {% else %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ m.product.unit }}</span></td>
-                    <td>
-                        {{ m.destination_branch|default:"—" }}
-                        {% if m.reference_no %}<span style="color:#94a3b8;font-size:0.78rem;">({{ m.reference_no }})</span>{% endif %}
-                    </td>
-                    <td style="color:#94a3b8;">{{ m.created_by.username|default:"—" }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center py-5" style="color:#94a3b8;">
-                        <i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-                        No movements recorded yet.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div><!-- recent movements card -->
-    </div><!-- col-lg-7 -->
-</div><!-- chart + movements row -->
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 {% if deliveries_by_branch %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
-    const labels = [{% for row in deliveries_by_branch %}"{{ row.destination_branch__name|default:'Unspecified' }}"{% if not forloop.last %},{% endif %}{% endfor %}];
-    const data   = [{% for row in deliveries_by_branch %}{{ row.total_qty }}{% if not forloop.last %},{% endif %}{% endfor %}];
-
+    // Single series, single hue — no legend needed, the card title names it.
     new Chart(document.getElementById('branchChart'), {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: [{% for row in deliveries_by_branch %}"{{ row.destination_branch__name|default:'Unspecified'|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}],
             datasets: [{
-                label: 'Total Qty Delivered',
-                data: data,
-                backgroundColor: 'rgba(79,70,229,0.12)',
-                borderColor: '#4f46e5',
-                borderWidth: 2,
-                borderRadius: 6,
-                borderSkipped: false,
+                label: 'Units delivered',
+                data: [{% for row in deliveries_by_branch %}{{ row.total_qty }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                backgroundColor: '#059669',
+                borderRadius: 4,
+                borderSkipped: 'left',
+                barThickness: 14,
             }]
         },
         options: {
+            indexAxis: 'y',
             responsive: true,
+            maintainAspectRatio: false,
+            animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 300 },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    callbacks: { label: ctx => ` ${ctx.parsed.y} units` }
+                    backgroundColor: '#0f172a',
+                    titleFont: { family: 'Fira Sans', size: 12 },
+                    bodyFont: { family: 'Fira Code', size: 12 },
+                    padding: 8,
+                    displayColors: false,
+                    callbacks: { label: ctx => ` ${ctx.parsed.x} units` }
                 }
             },
             scales: {
                 x: {
-                    grid: { display: false },
-                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: '#f1f5f9' },
+                    ticks: { font: { family: 'Fira Code', size: 11 }, color: '#64748b' }
                 },
                 y: {
-                    beginAtZero: true,
-                    grid: { color: '#f1f5f9' },
-                    ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+                    border: { display: false },
+                    grid: { display: false },
+                    ticks: { font: { family: 'Fira Sans', size: 11 }, color: '#334155' }
                 }
             }
         }

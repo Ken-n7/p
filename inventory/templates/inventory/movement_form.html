@@ -1,64 +1,54 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-7">
-        <div class="mb-3">
-            <a href="{% url 'movement_create' %}">Movement Types</a>
-            <h5>{{ title }}</h5>
+<a href="{% url 'movement_create' %}" class="back-link">
+    <i class="fas fa-arrow-left" style="font-size:0.7rem;" aria-hidden="true"></i> Movement types
+</a>
+
+<div class="form-narrow">
+    <div class="page-head">
+        <div>
+            <h1>{{ title }}</h1>
+            <p class="page-sub">
+                {% if movement_type == 'production_in' %}Adds finished goods to stock as a new traceable batch.
+                {% elif movement_type == 'delivery_out' %}Ships stock from a batch to a branch. Deducts from stock.
+                {% elif movement_type == 'loss' %}Records spoiled or lost goods. Deducts from stock.
+                {% endif %}
+            </p>
         </div>
-        <div class="card">
-            <div class="card-body p-4">
-                <form method="post" id="movement-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="movement_type" value="{{ movement_type }}">
+    </div>
 
-                    {% if movement_type == 'delivery_out' %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.product.label }}</label>{{ form.product }}
-                        {% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.source_batch.label }}</label>{{ form.source_batch }}
-                        {% if form.source_batch.errors %}<div class="text-danger">{{ form.source_batch.errors }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.destination_branch.label }}</label>{{ form.destination_branch }}
-                        {% if form.destination_branch.errors %}<div class="text-danger">{{ form.destination_branch.errors }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.reference_no.label }}</label>{{ form.reference_no }}{% if form.reference_no.errors %}<div class="text-danger">{{ form.reference_no.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="movement-form" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="movement_type" value="{{ movement_type }}">
 
-                    {% elif movement_type == 'loss' %}
-                    <div class="mb-3"><label class="form-label">{{ form.product.label }}</label>{{ form.product }}{% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.loss_location.label }}</label>{{ form.loss_location }}{% if form.loss_location.errors %}<div class="text-danger">{{ form.loss_location.errors }}</div>{% endif %}</div>
-                    <div class="mb-3" id="source-delivery-wrap" style="display:none;">
-                        <label class="form-label">{{ form.source_delivery.label }}</label>{{ form.source_delivery }}
-                        {% if form.source_delivery.errors %}<div class="text-danger">{{ form.source_delivery.errors }}</div>{% endif %}
-                    </div>
-                    <div class="mb-3"><label class="form-label">{{ form.source_batch.label }}</label>{{ form.source_batch }}{% if form.source_batch.errors %}<div class="text-danger">{{ form.source_batch.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger mb-3">
+                    <i class="fas fa-circle-exclamation mt-1" aria-hidden="true"></i>
+                    <div>{{ form.non_field_errors }}</div>
+                </div>
+                {% endif %}
 
-                    {% elif movement_type == 'production_in' %}
-                    <div class="mb-3"><label class="form-label">{{ form.product.label }}</label>{{ form.product }}{% if form.product.errors %}<div class="text-danger">{{ form.product.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.quantity.label }}</label>{{ form.quantity }}{% if form.quantity.errors %}<div class="text-danger">{{ form.quantity.errors }}</div>{% endif %}</div>
-                    <div class="mb-3"><label class="form-label">{{ form.batch_number.label }}</label>{{ form.batch_number }}{% if form.batch_number.errors %}<div class="text-danger">{{ form.batch_number.errors }}</div>{% endif %}</div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3"><label class="form-label">{{ form.production_date.label }}</label>{{ form.production_date }}{% if form.production_date.errors %}<div class="text-danger">{{ form.production_date.errors }}</div>{% endif %}</div>
-                        <div class="col-md-6 mb-3"><label class="form-label">{{ form.expiration_date.label }}</label>{{ form.expiration_date }}{% if form.expiration_date.errors %}<div class="text-danger">{{ form.expiration_date.errors }}</div>{% endif %}</div>
-                    </div>
-                    <div class="mb-3"><label class="form-label">{{ form.note.label }}</label>{{ form.note }}{% if form.note.errors %}<div class="text-danger">{{ form.note.errors }}</div>{% endif %}</div>
+                {% for field in form %}
+                <div class="mb-3" {% if field.name == 'source_delivery' %}id="source-delivery-wrap" style="display:none;"{% endif %}>
+                    <label class="form-label" for="{{ field.id_for_label }}">
+                        {{ field.label }}{% if field.field.required %} <span style="color:var(--color-destructive);" aria-hidden="true">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                    {% if field.errors %}<div class="field-error">{{ field.errors|striptags }}</div>{% endif %}
+                </div>
+                {% endfor %}
 
-                    {% else %}
-                    {{ form.as_p }}
-                    {% endif %}
-
-                    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-                    <button type="submit" class="btn btn-success">Record Movement</button>
-                </form>
-            </div>
+                <div class="d-flex gap-2 pt-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check" aria-hidden="true"></i> Record Movement
+                    </button>
+                    <a href="{% url 'movement_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

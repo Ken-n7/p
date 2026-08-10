@@ -1,142 +1,150 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Stock Movements</h5>
-        <p class="text-muted small mb-0">All recorded inventory movements.</p>
+        <h1>Stock Movements</h1>
+        <p class="page-sub">All recorded inventory movements.</p>
     </div>
     {% if request.user.is_superuser or request.user.profile.role != 'accountant' %}
-    <a href="{% url 'movement_create' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus"></i> Record Movement
-    </a>
+    <div class="page-head-actions">
+        <a href="{% url 'movement_create' %}" class="btn btn-success">
+            <i class="fas fa-plus" aria-hidden="true"></i> Record Movement
+        </a>
+    </div>
     {% endif %}
 </div>
 
-<div class="alert mb-3" style="background:#f0f9ff;border-left:3px solid #0284c7;border-radius:10px;padding:10px 14px;font-size:0.82rem;color:#0c4a6e;">
-    <i class="fas fa-lock" style="color:#0284c7;margin-right:6px;"></i>
-    <strong>Movements are permanent records.</strong>
-    To correct a wrong entry, record a new movement. Return In movements are created automatically when a reconciliation discrepancy is resolved as <em>Returned to Warehouse</em>.
-</div>
-
-<div class="card mb-3" style="border-radius:10px!important;">
-    <div class="card-body py-3 px-3">
-        <form method="get">
-            <div class="row g-2 align-items-end">
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Type</label>
-                    <select name="type" class="form-select form-select-sm">
-                        <option value="">All Types</option>
-                        {% for value, label in movement_choices %}
-                        <option value="{{ value }}" {% if movement_type == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Branch</label>
-                    <select name="branch" class="form-select form-select-sm">
-                        <option value="">All Branches</option>
-                        {% for b in branches %}
-                        <option value="{{ b.pk }}" {% if branch_id == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Product</label>
-                    <select name="product" class="form-select form-select-sm">
-                        <option value="">All Products</option>
-                        {% for p in products %}
-                        <option value="{{ p.pk }}" {% if product_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Reference No.</label>
-                    <input type="text" name="ref" value="{{ reference }}" class="form-control form-control-sm" placeholder="Search…">
-                </div>
-                <div class="col-12 d-flex gap-2 pt-1">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    {% if has_filters %}
-                    <a href="{% url 'movement_list' %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-times"></i> Clear
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </form>
-    </div>
+<div class="alert alert-info mb-3">
+    <i class="fas fa-lock mt-1" aria-hidden="true"></i>
+    <div><strong>Movements are permanent records.</strong> To correct a wrong entry, record a new movement — entries are never edited or deleted.</div>
 </div>
 
 <div class="card">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0 dt-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Qty</th>
-                    <th>Batch</th>
-                    <th>Loss Location</th>
-                    <th>Branch / Destination</th>
-                    <th>Reference</th>
-                    <th>Note</th>
-                    <th>By</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in movements %}
-                <tr>
-                    <td style="color:#64748b;white-space:nowrap;">{{ m.created_at|date:"M d, Y H:i" }}</td>
-                    <td style="font-weight:500;"><a href="{% url 'product_detail' m.product.pk %}" style="color:#4f46e5;text-decoration:none;">{{ m.product.name }}</a></td>
-                    <td>
-                        {% if m.movement_type == 'production_in' %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'delivery_out' %}
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'loss' %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ m.get_movement_type_display }}</span>
-                        {% else %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">{{ m.get_movement_type_display }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if m.movement_type == 'delivery_out' %}
-                            {% if not m.has_reconciliation %}
-                            <span class="badge" style="background:#f1f5f9;color:#64748b;">No Sales Data</span>
-                            {% elif m.has_pending_recon %}
-                            <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
-                            {% else %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">Resolved</span>
-                            {% endif %}
-                        {% else %}
-                            <span style="color:#cbd5e1;">—</span>
-                        {% endif %}
-                    </td>
-                    <td style="font-weight:600;">{{ m.quantity }} <span style="color:#94a3b8;font-size:0.78rem;font-weight:400;">{{ m.product.unit }}</span></td>
-                    <td style="color:#64748b;">{{ m.source_batch.batch_number|default:"—" }}</td>
-                    <td style="color:#64748b;">{% if m.movement_type == 'loss' and m.loss_location %}{{ m.get_loss_location_display }}{% else %}—{% endif %}</td>
-                    <td style="color:#64748b;">{{ m.destination_branch|default:"—" }}</td>
-                    <td style="color:#64748b;">{{ m.reference_no|default:"—" }}</td>
-                    <td style="color:#94a3b8;font-size:0.8rem;">
-                        {% if m.note %}
-                            {% if m.note|length > 40 %}
-                            <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-content="{{ m.note }}" style="cursor:help;border-bottom:1px dashed #cbd5e1;">{{ m.note|truncatechars:40 }}</span>
-                            {% else %}{{ m.note }}{% endif %}
-                        {% else %}—{% endif %}
-                    </td>
-                    <td style="color:#94a3b8;font-size:0.8rem;">{{ m.created_by.username|default:"—" }}</td>
-                </tr>
+    <form method="get" class="filter-bar">
+        <div class="filter-field">
+            <label for="f-type">Type</label>
+            <select id="f-type" name="type" class="form-select form-select-sm">
+                <option value="">All types</option>
+                {% for value, label in movement_choices %}
+                <option value="{{ value }}" {% if movement_type == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
-        {% if not movements %}
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="fas fa-inbox" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-            No movements recorded yet.
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-branch">Branch</label>
+            <select id="f-branch" name="branch" class="form-select form-select-sm">
+                <option value="">All branches</option>
+                {% for b in branches %}
+                <option value="{{ b.pk }}" {% if branch_id == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-product">Product</label>
+            <select id="f-product" name="product" class="form-select form-select-sm">
+                <option value="">All products</option>
+                {% for p in products %}
+                <option value="{{ p.pk }}" {% if product_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-ref">Reference No.</label>
+            <input type="search" id="f-ref" name="ref" value="{{ reference }}" class="form-control form-control-sm" placeholder="Search…">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-filter" aria-hidden="true"></i> Filter
+            </button>
+            {% if has_filters %}
+            <a href="{% url 'movement_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="card-body p-0">
+        {% if movements %}
+        <div class="table-wrap">
+            <table class="table table-hover mb-0 dt-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Qty</th>
+                        <th scope="col">Batch</th>
+                        <th scope="col">Loss Location</th>
+                        <th scope="col">Branch</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Note</th>
+                        <th scope="col">By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movements %}
+                    <tr>
+                        <td class="text-nowrap num">{{ m.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="strong"><a href="{% url 'product_detail' m.product.pk %}">{{ m.product.name }}</a></td>
+                        <td>
+                            {% if m.movement_type == 'production_in' %}
+                                <span class="badge badge-ok">{{ m.get_movement_type_display }}</span>
+                            {% elif m.movement_type == 'delivery_out' %}
+                                <span class="badge badge-info">{{ m.get_movement_type_display }}</span>
+                            {% elif m.movement_type == 'loss' %}
+                                <span class="badge badge-danger">{{ m.get_movement_type_display }}</span>
+                            {% else %}
+                                <span class="badge badge-neutral">{{ m.get_movement_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if m.movement_type == 'delivery_out' %}
+                                {% if not m.has_reconciliation %}
+                                <span class="badge badge-neutral">No sales data</span>
+                                {% elif m.has_pending_recon %}
+                                <span class="badge badge-warn">Pending</span>
+                                {% else %}
+                                <span class="badge badge-ok">Resolved</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="num strong text-nowrap">{{ m.quantity }} <span class="text-muted">{{ m.product.unit }}</span></td>
+                        <td class="num">{{ m.source_batch.batch_number|default:"—" }}</td>
+                        <td>{% if m.movement_type == 'loss' and m.loss_location %}{{ m.get_loss_location_display }}{% else %}—{% endif %}</td>
+                        <td>{{ m.destination_branch|default:"—" }}</td>
+                        <td class="num">{{ m.reference_no|default:"—" }}</td>
+                        <td>
+                            {% if m.note %}
+                                {% if m.note|length > 40 %}
+                                <span data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top"
+                                      data-bs-content="{{ m.note }}" tabindex="0"
+                                      style="cursor:help;border-bottom:1px dashed var(--color-border);">{{ m.note|truncatechars:40 }}</span>
+                                {% else %}{{ m.note }}{% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{{ m.created_by.username|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-inbox" aria-hidden="true"></i>
+            <div class="empty-title">{% if has_filters %}No movements match these filters{% else %}No movements recorded yet{% endif %}</div>
+            <div class="empty-hint">
+                {% if has_filters %}Try widening or clearing the filters.{% else %}Production, deliveries and losses will appear here.{% endif %}
+            </div>
+            {% if has_filters %}
+            <a href="{% url 'movement_list' %}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+            {% elif request.user.is_superuser or request.user.profile.role != 'accountant' %}
+            <a href="{% url 'movement_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus" aria-hidden="true"></i> Record Movement
+            </a>
+            {% endif %}
         </div>
         {% endif %}
     </div>

@@ -1,2 +1,57 @@
 {% extends 'inventory/base.html' %}
-{% block content %}<div class="row justify-content-center"><div class="col-md-7"><div class="mb-4"><h5 class="mb-0">Record Movement</h5><p class="text-muted small mb-0">Select the type of movement to record.</p></div><div class="row g-3">{% if 'production_in' in allowed_types %}<div class="col-sm-6"><a href="{% url 'movement_create' %}?type=production_in" class="card text-decoration-none h-100" style="border:1.5px solid #e2e8f0;"><div class="card-body p-4">Production In</div></a></div>{% endif %}{% if 'delivery_out' in allowed_types %}<div class="col-sm-6"><a href="{% url 'movement_create' %}?type=delivery_out" class="card text-decoration-none h-100" style="border:1.5px solid #e2e8f0;"><div class="card-body p-4">Delivery Out</div></a></div>{% endif %}{% if 'loss' in allowed_types %}<div class="col-sm-6"><a href="{% url 'movement_create' %}?type=loss" class="card text-decoration-none h-100" style="border:1.5px solid #e2e8f0;"><div class="card-body p-4">Stock Loss</div></a></div>{% endif %}</div></div></div>{% endblock %}
+
+{% block content %}
+<div class="form-narrow">
+    <div class="page-head">
+        <div>
+            <h1>Record Movement</h1>
+            <p class="page-sub">Select the type of movement to record. Entries are permanent.</p>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        {% if 'production_in' in allowed_types %}
+        <a href="{% url 'movement_create' %}?type=production_in" class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Stock In</span>
+                <span class="stat-icon accent"><i class="fas fa-industry" aria-hidden="true"></i></span>
+            </div>
+            <div style="font-weight:600;font-size:0.9rem;color:var(--color-foreground);">Production In</div>
+            <div class="stat-meta">New finished goods from the warehouse, recorded as a traceable batch with production and expiry dates.</div>
+        </a>
+        {% endif %}
+
+        {% if 'delivery_out' in allowed_types %}
+        <a href="{% url 'movement_create' %}?type=delivery_out" class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Stock Out</span>
+                <span class="stat-icon info"><i class="fas fa-truck" aria-hidden="true"></i></span>
+            </div>
+            <div style="font-weight:600;font-size:0.9rem;color:var(--color-foreground);">Delivery Out</div>
+            <div class="stat-meta">Goods shipped from a batch to an SM or Savemore branch. Needs a reference number.</div>
+        </a>
+        {% endif %}
+
+        {% if 'loss' in allowed_types %}
+        <a href="{% url 'movement_create' %}?type=loss" class="stat-card">
+            <div class="stat-top">
+                <span class="stat-label">Stock Out</span>
+                <span class="stat-icon danger"><i class="fas fa-triangle-exclamation" aria-hidden="true"></i></span>
+            </div>
+            <div style="font-weight:600;font-size:0.9rem;color:var(--color-foreground);">Stock Loss</div>
+            <div class="stat-meta">Spoiled or lost goods, at the warehouse or in transit to a branch.</div>
+        </a>
+        {% endif %}
+    </div>
+
+    {% if not allowed_types %}
+    <div class="card">
+        <div class="empty">
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            <div class="empty-title">No movement types available</div>
+            <div class="empty-hint">Your role does not permit recording stock movements.</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

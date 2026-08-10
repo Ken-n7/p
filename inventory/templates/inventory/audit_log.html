@@ -1,99 +1,96 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Audit Log</h5>
-        <p class="text-muted small mb-0">Showing {{ logs|length }} entries{% if has_filters %} (filtered){% endif %}.</p>
-    </div>
-</div>
-
-<div class="card mb-3" style="border-radius:10px!important;">
-    <div class="card-body py-3 px-3">
-        <form method="get">
-            <div class="row g-2 align-items-end">
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Action</label>
-                    <select name="action" class="form-select form-select-sm">
-                        <option value="">All Actions</option>
-                        {% for value, label in action_choices %}
-                        <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Model</label>
-                    <select name="model" class="form-select form-select-sm">
-                        <option value="">All Models</option>
-                        {% for name in model_names %}
-                        <option value="{{ name }}" {% if model_filter == name %}selected{% endif %}>{{ name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Date From</label>
-                    <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <label class="form-label mb-1" style="font-size:0.72rem;color:#94a3b8;font-weight:500;">Date To</label>
-                    <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
-                </div>
-                <div class="col-12 d-flex gap-2 pt-1">
-                    <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="fas fa-filter"></i> Filter
-                    </button>
-                    {% if has_filters %}
-                    <a href="{% url 'audit_log' %}" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-times"></i> Clear
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </form>
+        <h1>Audit Log</h1>
+        <p class="page-sub">Showing {{ logs|length }} entr{{ logs|length|pluralize:"y,ies" }}{% if has_filters %} (filtered){% endif %} — newest first, capped at 200.</p>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0 dt-table">
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Record</th>
-                    <th>Changes</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for entry in logs %}
-                <tr>
-                    <td style="color:#64748b;white-space:nowrap;font-size:0.8rem;">{{ entry.timestamp|date:"M d, Y H:i:s" }}</td>
-                    <td style="font-size:0.82rem;">
-                        <span style="font-weight:500;">{{ entry.user.username|default:"system" }}</span>
-                    </td>
-                    <td>
-                        {% if entry.action == 'create' %}
-                            <span class="badge" style="background:#dcfce7;color:#15803d;">Created</span>
-                        {% elif entry.action == 'update' %}
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">Updated</span>
-                        {% elif entry.action == 'delete' %}
-                            <span class="badge" style="background:#fee2e2;color:#dc2626;">Deleted</span>
-                        {% endif %}
-                    </td>
-                    <td style="font-size:0.82rem;">
-                        <span style="color:#94a3b8;">{{ entry.model_name }}</span>
-                        <span style="color:#334155;"> — {{ entry.object_repr|truncatechars:50 }}</span>
-                    </td>
-                    <td style="font-size:0.78rem;color:#94a3b8;max-width:260px;">{{ entry.changes|default:"—"|truncatechars:80 }}</td>
-                </tr>
+    <form method="get" class="filter-bar">
+        <div class="filter-field">
+            <label for="f-action">Action</label>
+            <select id="f-action" name="action" class="form-select form-select-sm">
+                <option value="">All actions</option>
+                {% for value, label in action_choices %}
+                <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
-            </tbody>
-        </table>
-        {% if not logs %}
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="fas fa-history" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-            No audit entries yet.
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-model">Model</label>
+            <select id="f-model" name="model" class="form-select form-select-sm">
+                <option value="">All models</option>
+                {% for name in model_names %}
+                <option value="{{ name }}" {% if model_filter == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="f-from">Date from</label>
+            <input type="date" id="f-from" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+        </div>
+        <div class="filter-field">
+            <label for="f-to">Date to</label>
+            <input type="date" id="f-to" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="fas fa-filter" aria-hidden="true"></i> Filter
+            </button>
+            {% if has_filters %}
+            <a href="{% url 'audit_log' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="card-body p-0">
+        {% if logs %}
+        <div class="table-wrap">
+            <table class="table table-hover mb-0 dt-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Timestamp</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">Record</th>
+                        <th scope="col">Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in logs %}
+                    <tr>
+                        <td class="num text-nowrap">{{ entry.timestamp|date:"M d, Y H:i:s" }}</td>
+                        <td class="strong">{{ entry.user.username|default:"system" }}</td>
+                        <td>
+                            {% if entry.action == 'create' %}
+                                <span class="badge badge-ok">Created</span>
+                            {% elif entry.action == 'update' %}
+                                <span class="badge badge-info">Updated</span>
+                            {% elif entry.action == 'delete' %}
+                                <span class="badge badge-danger">Deleted</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ entry.model_name }}</span>
+                            <span class="strong">— {{ entry.object_repr|truncatechars:50 }}</span>
+                        </td>
+                        <td style="max-width:280px;">{{ entry.changes|default:"—"|truncatechars:80 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
+            <div class="empty-title">{% if has_filters %}No entries match these filters{% else %}No audit entries yet{% endif %}</div>
+            <div class="empty-hint">Every create, update and delete is recorded here automatically.</div>
+            {% if has_filters %}
+            <a href="{% url 'audit_log' %}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+            {% endif %}
         </div>
         {% endif %}
     </div>

@@ -32,8 +32,12 @@ class _MovementFormMixin:
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            if not isinstance(field.widget, forms.CheckboxInput):
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-select')
+            elif not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-control')
+        if 'product' in self.fields:
+            self.fields['product'].empty_label = 'Select a product'
         if 'source_batch' in self.fields:
             self.fields['source_batch'].label_from_instance = lambda obj: (
                 f"{obj.batch_number} — exp {obj.expiration_date}"
@@ -134,7 +138,8 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
 
     class Meta:
         model = InventoryMovement
-        fields = ['loss_location', 'source_delivery', 'product', 'source_batch', 'quantity', 'note']
+        # order drives the rendered form — product first, then where it was lost
+        fields = ['product', 'loss_location', 'source_delivery', 'source_batch', 'quantity', 'note']
         widgets = {
             'note': forms.Textarea(attrs={'rows': 3}),
         }

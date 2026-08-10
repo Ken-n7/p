@@ -1,78 +1,95 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Products</h5>
-        <p class="text-muted small mb-0">Manage your product catalog and stock levels.</p>
+        <h1>Products</h1>
+        <p class="page-sub">Manage your product catalog and stock levels.</p>
     </div>
-    <a href="{% url 'product_create' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus"></i> Add Product
-    </a>
-</div>
-
-<div class="card mb-3" style="border-radius:10px!important;">
-    <div class="card-body py-2 px-3">
-        <form method="get" class="d-flex gap-2 align-items-center">
-            <i class="fas fa-search" style="color:#94a3b8;font-size:0.8rem;"></i>
-            <input type="text" name="q" value="{{ query }}" class="form-control border-0 shadow-none ps-1"
-                style="font-size:0.855rem;" placeholder="Search by name or SKU…">
-            {% if query %}
-            <a href="{% url 'product_list' %}" class="btn btn-sm" style="color:#ef4444;font-size:0.76rem;white-space:nowrap;">
-                <i class="fas fa-times"></i> Clear
-            </a>
-            {% endif %}
-        </form>
+    <div class="page-head-actions">
+        <a href="{% url 'product_create' %}" class="btn btn-success">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add Product
+        </a>
     </div>
 </div>
 
 <div class="card">
+    <form method="get" class="filter-bar" role="search">
+        <div class="filter-field" style="flex:1 1 260px;">
+            <label for="q">Search</label>
+            <div class="position-relative">
+                <i class="fas fa-magnifying-glass" aria-hidden="true"
+                   style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:0.75rem;"></i>
+                <input type="search" id="q" name="q" value="{{ query }}" class="form-control" style="padding-left:30px;"
+                       placeholder="Name or SKU…">
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if query %}
+            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            {% endif %}
+        </div>
+    </form>
+
     <div class="card-body p-0">
-        <table class="table table-hover mb-0 dt-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>SKU</th>
-                    <th>Category</th>
-                    <th>Stock</th>
-                                        <th>Unit Price</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in products %}
-                <tr {% if p.quantity < 10 %}style="background:#fffbeb;"{% endif %}>
-                    <td style="font-weight:500;">
-                        <a href="{% url 'product_detail' p.pk %}" style="color:#4f46e5;text-decoration:none;">
-                            {{ p.name }}
-                        </a>
-                    </td>
-                    <td><code>{{ p.sku }}</code></td>
-                    <td style="color:#64748b;">{{ p.category }}</td>
-                    <td>
-                        <span style="font-weight:600;">{{ p.quantity }}</span>
-                        <span style="color:#94a3b8;font-size:0.8rem;">{{ p.unit }}</span>
-                        {% if p.quantity < 10 %}
-                        <span class="badge ms-1" style="background:#fef3c7;color:#92400e;">Low</span>
-                        {% endif %}
-                    </td>
-                                        <td style="color:#64748b;">{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
-                    <td class="text-nowrap">
-                        <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline-secondary btn-sm me-1">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'product_delete' p.pk %}" class="btn btn-sm" style="border:1px solid #fecaca;color:#ef4444;">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% if not products %}
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="fas fa-box-open" style="font-size:1.5rem;display:block;margin-bottom:8px;opacity:0.4;"></i>
-            No products found.
+        {% if products %}
+        <div class="table-wrap">
+            <table class="table table-hover mb-0 dt-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">Category</th>
+                        <th scope="col">Stock</th>
+                        <th scope="col">Unit Price</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                    <tr>
+                        <td class="strong">
+                            <a href="{% url 'product_detail' p.pk %}">{{ p.name }}</a>
+                        </td>
+                        <td><code>{{ p.sku }}</code></td>
+                        <td>{{ p.category }}</td>
+                        <td class="text-nowrap">
+                            <span class="num strong">{{ p.quantity }}</span>
+                            <span class="text-muted">{{ p.unit }}</span>
+                            {% if p.quantity < 10 %}
+                            <span class="badge badge-warn ms-1">Low</span>
+                            {% endif %}
+                        </td>
+                        <td class="num">{% if p.unit_price %}₱{{ p.unit_price }}{% else %}—{% endif %}</td>
+                        <td class="text-nowrap text-end">
+                            <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline-secondary btn-sm" aria-label="Edit {{ p.name }}">
+                                <i class="fas fa-pen" aria-hidden="true"></i>
+                            </a>
+                            <a href="{% url 'product_delete' p.pk %}" class="btn btn-outline-secondary btn-sm" aria-label="Delete {{ p.name }}"
+                               style="color:var(--color-destructive);">
+                                <i class="fas fa-trash" aria-hidden="true"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-box-open" aria-hidden="true"></i>
+            <div class="empty-title">{% if query %}No products match "{{ query }}"{% else %}No products yet{% endif %}</div>
+            <div class="empty-hint">
+                {% if query %}Try a different name or SKU.{% else %}Add your first product to start tracking stock.{% endif %}
+            </div>
+            {% if query %}
+            <a href="{% url 'product_list' %}" class="btn btn-outline-secondary btn-sm">Clear search</a>
+            {% else %}
+            <a href="{% url 'product_create' %}" class="btn btn-success btn-sm">
+                <i class="fas fa-plus" aria-hidden="true"></i> Add Product
+            </a>
+            {% endif %}
         </div>
         {% endif %}
     </div>

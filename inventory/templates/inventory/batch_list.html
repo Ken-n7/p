@@ -1,46 +1,70 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Production Batches</h5>
-        <p class="text-muted small mb-0">All recorded production-in batches across products.</p>
+        <h1>Production Batches</h1>
+        <p class="page-sub">All recorded production-in batches across products.</p>
     </div>
 </div>
+
 <div class="card">
     <div class="card-body p-0">
-        <table class="table table-hover mb-0 dt-table">
-            <thead>
-                <tr><th>Date Recorded</th><th>Product</th><th>SKU</th><th>Batch No.</th><th>Available / Produced</th><th>Production Date</th><th>Expiration Date</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% for b in batches %}
-                <tr {% if b.available_quantity == 0 %}style="opacity:0.45;"{% endif %}>
-                    <td>{{ b.created_at|date:"M d, Y H:i" }}</td>
-                    <td><a href="{% url 'product_detail' b.product.pk %}">{{ b.product.name }}</a></td>
-                    <td><code>{{ b.product.sku }}</code></td>
-                    <td>{{ b.batch_number|default:"—" }}</td>
-                    <td>
-                        <strong>{{ b.available_quantity }}</strong> / {{ b.quantity }} {{ b.product.unit }}
-                        {% if b.available_quantity == 0 %}<span class="badge ms-1" style="background:#f1f5f9;color:#475569;">Depleted</span>{% endif %}
-                    </td>
-                    <td>{{ b.production_date|default:"—" }}</td>
-                    <td>{{ b.expiration_date|default:"—" }}</td>
-                    <td>
-                        {% if b.expiration_date %}
-                            {% if b.expiration_date < today %}
-                                <span class="badge" style="background:#fee2e2;color:#dc2626;">Expired</span>
-                            {% elif b.expiration_date <= seven_days %}
-                                <span class="badge" style="background:#fef3c7;color:#92400e;">Expiring Soon</span>
-                            {% else %}
-                                <span class="badge" style="background:#dcfce7;color:#15803d;">OK</span>
-                            {% endif %}
-                        {% else %}—{% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if batches %}
+        <div class="table-wrap">
+            <table class="table table-hover mb-0 dt-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Recorded</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">SKU</th>
+                        <th scope="col">Batch No.</th>
+                        <th scope="col">Available / Produced</th>
+                        <th scope="col">Produced</th>
+                        <th scope="col">Expires</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in batches %}
+                    <tr {% if b.available_quantity == 0 %}style="opacity:0.5;"{% endif %}>
+                        <td class="num text-nowrap">{{ b.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="strong"><a href="{% url 'product_detail' b.product.pk %}">{{ b.product.name }}</a></td>
+                        <td><code>{{ b.product.sku }}</code></td>
+                        <td class="num strong">{{ b.batch_number|default:"—" }}</td>
+                        <td class="text-nowrap">
+                            <span class="num strong">{{ b.available_quantity }}</span>
+                            <span class="num text-muted">/ {{ b.quantity }} {{ b.product.unit }}</span>
+                            {% if b.available_quantity == 0 %}<span class="badge badge-neutral ms-1">Depleted</span>{% endif %}
+                        </td>
+                        <td class="num">{{ b.production_date|default:"—" }}</td>
+                        <td class="num">{{ b.expiration_date|default:"—" }}</td>
+                        <td>
+                            {% if b.expiration_date %}
+                                {% if b.expiration_date < today %}
+                                    <span class="badge badge-danger">Expired</span>
+                                {% elif b.expiration_date <= seven_days %}
+                                    <span class="badge badge-warn">Expiring soon</span>
+                                {% else %}
+                                    <span class="badge badge-ok">OK</span>
+                                {% endif %}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty">
+            <i class="fas fa-layer-group" aria-hidden="true"></i>
+            <div class="empty-title">No batches yet</div>
+            <div class="empty-hint">Record a Production In movement to create the first batch.</div>
+            <a href="{% url 'movement_create' %}?type=production_in" class="btn btn-success btn-sm">
+                <i class="fas fa-plus" aria-hidden="true"></i> Record Production
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

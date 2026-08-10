@@ -1,64 +1,62 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="page-head">
     <div>
-        <h5 class="mb-0">Branches</h5>
-        <p class="text-muted small mb-0">SM & Savemore branches served by EFP.</p>
+        <h1>Branches</h1>
+        <p class="page-sub">SM &amp; Savemore branches served by EFP.</p>
     </div>
     {% if is_admin %}
-    <a href="{% url 'branch_create' %}" class="btn btn-success btn-sm">
-        <i class="fas fa-plus"></i> Add Branch
-    </a>
+    <div class="page-head-actions">
+        <a href="{% url 'branch_create' %}" class="btn btn-success">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add Branch
+        </a>
+    </div>
     {% endif %}
 </div>
 
 {% if branches %}
-<div class="row g-3">
+<div class="stat-grid">
     {% for branch in branches %}
-    <div class="col-sm-6 col-lg-4">
-        <div class="card h-100" style="border-radius:12px!important;">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-start justify-content-between mb-2">
-                    <div style="width:38px;height:38px;border-radius:9px;background:#ede9fe;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fas fa-store" style="color:#4f46e5;font-size:0.85rem;"></i>
-                    </div>
-                    {% if is_admin %}
-                    <div class="d-flex gap-1">
-                        <a href="{% url 'branch_edit' branch.pk %}" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-pen"></i>
-                        </a>
-                        <a href="{% url 'branch_delete' branch.pk %}" class="btn btn-sm" style="color:#dc2626;border:1px solid #fca5a5;">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-                <div style="font-weight:600;font-size:0.95rem;color:#0f172a;margin-top:10px;">{{ branch.name }}</div>
-                {% if branch.address %}
-                <div style="font-size:0.8rem;color:#64748b;margin-top:3px;">
-                    <i class="fas fa-map-marker-alt" style="font-size:0.72rem;margin-right:4px;"></i>{{ branch.address }}
-                </div>
-                {% endif %}
-                <a href="{% url 'branch_detail' branch.pk %}" class="btn btn-primary btn-sm mt-3 w-100">
-                    View Details <i class="fas fa-arrow-right" style="font-size:0.72rem;margin-left:4px;"></i>
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-icon accent"><i class="fas fa-store" aria-hidden="true"></i></span>
+            {% if is_admin %}
+            <span class="d-flex gap-1">
+                <a href="{% url 'branch_edit' branch.pk %}" class="btn btn-outline-secondary btn-sm" aria-label="Edit {{ branch.name }}">
+                    <i class="fas fa-pen" aria-hidden="true"></i>
                 </a>
-            </div>
+                <a href="{% url 'branch_delete' branch.pk %}" class="btn btn-outline-secondary btn-sm" aria-label="Delete {{ branch.name }}"
+                   style="color:var(--color-destructive);">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </a>
+            </span>
+            {% endif %}
         </div>
+        <div>
+            <div style="font-weight:600;font-size:0.9rem;color:var(--color-foreground);">{{ branch.name }}</div>
+            {% if branch.address %}
+            <div class="stat-meta mt-1">
+                <i class="fas fa-location-dot" style="font-size:0.7rem;" aria-hidden="true"></i> {{ branch.address }}
+            </div>
+            {% endif %}
+        </div>
+        <a href="{% url 'branch_detail' branch.pk %}" class="btn btn-outline-secondary btn-sm w-100 justify-content-center">
+            View details <i class="fas fa-arrow-right" style="font-size:0.68rem;" aria-hidden="true"></i>
+        </a>
     </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="card">
-    <div class="card-body text-center py-5" style="color:#94a3b8;">
-        <i class="fas fa-store" style="font-size:2rem;display:block;margin-bottom:12px;opacity:0.3;"></i>
-        No branches added yet.
+    <div class="empty">
+        <i class="fas fa-store" aria-hidden="true"></i>
+        <div class="empty-title">No branches yet</div>
+        <div class="empty-hint">Add the SM and Savemore branches EFP delivers to.</div>
         {% if is_admin %}
-        <div class="mt-2">
-            <a href="{% url 'branch_create' %}" class="btn btn-success btn-sm">
-                <i class="fas fa-plus"></i> Add First Branch
-            </a>
-        </div>
+        <a href="{% url 'branch_create' %}" class="btn btn-success btn-sm">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add First Branch
+        </a>
         {% endif %}
     </div>
 </div>

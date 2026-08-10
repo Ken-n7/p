@@ -1,91 +1,88 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="mb-3">
-            <h5 class="mb-0">Confirm Sales Data</h5>
-            <p class="text-muted small mb-0">Review before saving. Records cannot be edited after submission.</p>
+<div class="form-narrow">
+    <div class="page-head">
+        <div>
+            <h1>Confirm Sales Data</h1>
+            <p class="page-sub">Review before saving. Records cannot be edited after submission.</p>
         </div>
-
-        <div class="card mb-3">
-            <div class="card-body p-0">
-                <table class="table mb-0" style="font-size:0.875rem;">
-                    <tbody>
-                        <tr>
-                            <th class="ps-3" style="width:45%;color:#64748b;font-weight:500;">Branch</th>
-                            <td class="pe-3">{{ cd.branch }}</td>
-                        </tr>
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Product</th>
-                            <td class="pe-3">{{ cd.product }}</td>
-                        </tr>
-                        {% if cd.delivery_movement %}
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Linked Delivery</th>
-                            <td class="pe-3">
-                                <span class="badge" style="background:#dbeafe;color:#1d4ed8;">
-                                    <i class="fas fa-link" style="margin-right:4px;"></i>
-                                    {{ cd.delivery_movement.reference_no|default:"No ref" }} — {{ cd.delivery_movement.created_at|date:"M d, Y" }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endif %}
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Sales Date</th>
-                            <td class="pe-3">{{ cd.sales_date|date:"M d, Y" }}</td>
-                        </tr>
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Sold Quantity</th>
-                            <td class="pe-3">{{ cd.sold_quantity }} {{ cd.product.unit }}</td>
-                        </tr>
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Internal Delivery Qty</th>
-                            <td class="pe-3">{{ cd.internal_delivery_qty }} {{ cd.product.unit }}</td>
-                        </tr>
-                        <tr>
-                            <th class="ps-3" style="color:#64748b;font-weight:500;">Discrepancy</th>
-                            <td class="pe-3">
-                                {% if discrepancy == 0 %}
-                                    <span class="badge" style="background:#dcfce7;color:#15803d;">0 — will auto-reconcile</span>
-                                {% elif discrepancy > 0 %}
-                                    <span class="badge" style="background:#fef3c7;color:#92400e;">+{{ discrepancy }} unsold</span>
-                                {% else %}
-                                    <span class="badge" style="background:#fee2e2;color:#dc2626;">{{ discrepancy }} over-sold</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="alert" style="background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;font-size:0.82rem;color:#92400e;">
-            <i class="fas fa-lock" style="margin-right:6px;"></i>
-            <strong>This record will be permanent.</strong> Double-check the figures above before confirming.
-        </div>
-
-        <form method="post" action="{% url 'reconciliation_add' %}">
-            {% csrf_token %}
-            {{ form.delivery_movement.as_hidden }}
-            {{ form.product.as_hidden }}
-            {{ form.branch.as_hidden }}
-            {{ form.sold_quantity.as_hidden }}
-            {{ form.sales_date.as_hidden }}
-            {{ form.internal_delivery_qty.as_hidden }}
-            <input type="hidden" name="confirmed" value="1">
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-check"></i> Confirm & Save
-                </button>
-                <a href="{% url 'reconciliation_add' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Edit
-                </a>
-                <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-danger ms-auto">
-                    Cancel
-                </a>
-            </div>
-        </form>
     </div>
+
+    <div class="card mb-3">
+        <div class="card-header"><span>Entry Summary</span></div>
+        <div class="card-body">
+            <div class="kv">
+                <div class="kv-item">
+                    <span class="kv-label">Branch</span>
+                    <span class="kv-value">{{ cd.branch }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Product</span>
+                    <span class="kv-value">{{ cd.product }}</span>
+                </div>
+                {% if cd.delivery_movement %}
+                <div class="kv-item">
+                    <span class="kv-label">Linked Delivery</span>
+                    <span class="kv-value">
+                        <span class="badge badge-info">
+                            <i class="fas fa-link" aria-hidden="true"></i>
+                            {{ cd.delivery_movement.reference_no|default:"No ref" }} — {{ cd.delivery_movement.created_at|date:"M d, Y" }}
+                        </span>
+                    </span>
+                </div>
+                {% endif %}
+                <div class="kv-item">
+                    <span class="kv-label">Sales Date</span>
+                    <span class="kv-value num">{{ cd.sales_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Sold Quantity</span>
+                    <span class="kv-value num">{{ cd.sold_quantity }} {{ cd.product.unit }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">We Delivered</span>
+                    <span class="kv-value num">{{ cd.internal_delivery_qty }} {{ cd.product.unit }}</span>
+                </div>
+                <div class="kv-item">
+                    <span class="kv-label">Discrepancy</span>
+                    <span class="kv-value">
+                        {% if discrepancy == 0 %}
+                            <span class="badge badge-ok">0 — will auto-reconcile</span>
+                        {% elif discrepancy > 0 %}
+                            <span class="badge badge-warn">+{{ discrepancy }} unsold</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ discrepancy }} over-sold</span>
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-warning mb-3">
+        <i class="fas fa-lock mt-1" aria-hidden="true"></i>
+        <div><strong>This record will be permanent.</strong> Double-check the figures above before confirming.</div>
+    </div>
+
+    <form method="post" action="{% url 'reconciliation_add' %}">
+        {% csrf_token %}
+        {{ form.delivery_movement.as_hidden }}
+        {{ form.product.as_hidden }}
+        {{ form.branch.as_hidden }}
+        {{ form.sold_quantity.as_hidden }}
+        {{ form.sales_date.as_hidden }}
+        {{ form.internal_delivery_qty.as_hidden }}
+        <input type="hidden" name="confirmed" value="1">
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check" aria-hidden="true"></i> Confirm &amp; Save
+            </button>
+            <a href="{% url 'reconciliation_add' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Edit
+            </a>
+            <a href="{% url 'reconciliation_list' %}" class="btn btn-outline-secondary ms-auto">Cancel</a>
+        </div>
+    </form>
 </div>
 {% endblock %}

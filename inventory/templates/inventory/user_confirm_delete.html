@@ -1,25 +1,30 @@
 {% extends 'inventory/base.html' %}
 
 {% block content %}
-<div class="row justify-content-center mt-2">
-    <div class="col-md-5">
-        <div class="card" style="border-top:3px solid #ef4444!important;">
-            <div class="card-body p-4">
-                <div style="width:44px;height:44px;border-radius:10px;background:#fee2e2;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
-                    <i class="fas fa-trash" style="color:#dc2626;"></i>
-                </div>
-                <h5 class="mb-1">Delete User</h5>
-                <p class="text-muted small mb-3">This action cannot be undone.</p>
-                <p style="font-size:0.875rem;">Permanently delete <strong>{{ target_user.username }}</strong>?
-                Their audit log entries will be preserved but unlinked from this account.</p>
-                <form method="post" class="d-flex gap-2 mt-4 pt-2" style="border-top:1px solid #f1f5f9;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                    <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">Cancel</a>
-                </form>
-            </div>
+<a href="{% url 'user_management' %}" class="back-link">
+    <i class="fas fa-arrow-left" style="font-size:0.7rem;" aria-hidden="true"></i> Users
+</a>
+
+<div class="form-narrow" style="max-width:520px;">
+    <div class="card" style="border-top:3px solid var(--color-destructive);">
+        <div class="card-body">
+            <span class="stat-icon danger mb-3"><i class="fas fa-trash" aria-hidden="true"></i></span>
+            <h1 style="font-size:1.0625rem;margin:0 0 4px;">Delete User</h1>
+            <p class="page-sub mb-3">This action cannot be undone.</p>
+
+            <p style="font-size:0.83rem;color:var(--color-secondary);">
+                Permanently delete <strong>{{ target_user.username }}</strong>?
+                Their audit log entries are preserved but unlinked from this account.
+                To block sign-in without losing the account, deactivate instead.
+            </p>
+
+            <form method="post" class="d-flex gap-2 pt-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash" aria-hidden="true"></i> Delete
+                </button>
+                <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
         </div>
     </div>
 </div>
