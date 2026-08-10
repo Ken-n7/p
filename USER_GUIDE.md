@@ -109,10 +109,12 @@ Goods sent from EFP's warehouse to an SM/Savemore branch.
 
 ### Loss
 
-Goods damaged, spoiled, or lost at EFP's warehouse.
+Goods damaged, spoiled, or lost.
 
-- Record the affected delivery for traceability (optional but recommended)
-- Cannot record more loss than what is currently in stock
+- **Loss location** is required — choose **Warehouse** (spoiled before dispatch) or **Transit** (lost during delivery)
+- For transit losses, the related delivery must be selected
+- Select the source batch the loss came from
+- Cannot record more than what is available in that batch
 - Stock effect: **decreases**
 
 ---
@@ -130,7 +132,7 @@ Compares EFP's internal delivery records against actual sales reported by SM/Sav
 | 0 | Branch sold exactly what was delivered | Auto-reconciled (green) |
 | Positive | Branch sold less than delivered | Pending — needs resolution |
 
-**Add a record:** Click **Add Sales Data** → fill in branch, product, delivery, sold quantity, and sales date → review the confirmation screen → submit.
+**Add a record:** Click **Add Sales Data** → select the delivery from the dropdown (product, branch, and delivered quantity fill in automatically) → enter the sold quantity and sales date → review the confirmation screen → submit.
 
 Records are **locked** after entry. If a figure was entered incorrectly, resolve the record using the options below.
 
@@ -140,8 +142,7 @@ Click **Resolve** on any pending record. Choose one of:
 
 | Resolution | What it does |
 |---|---|
-| **Accepted Loss** | Marks the discrepancy as accepted — goods were spoiled, stolen, or otherwise unrecoverable |
-| **Returned to EFP** | Marks the goods as physically returned (log a Return In movement separately if needed) |
+| **Written Off** | Marks the discrepancy as accepted — goods were expired or damaged at the branch and are unrecoverable |
 | **Corrected Entry** | Replaces the sold quantity with a corrected figure — creates a new reconciliation record automatically |
 
 All resolutions are permanent and recorded in the audit log.

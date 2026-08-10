@@ -18,12 +18,44 @@ class ProductForm(forms.ModelForm):
         return cleaned_data
 
 
+def _batch_field():
+    return forms.ModelChoiceField(
+        queryset=InventoryMovement.objects.filter(movement_type='production_in').order_by('product__name', 'expiration_date'),
+        required=True,
+        empty_label='Select a batch',
+        label='Batch',
+    )
+
+
 class _MovementFormMixin:
-    def _style(self):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            widget = field.widget
-            if not isinstance(widget, forms.CheckboxInput):
-                widget.attrs.setdefault('class', 'form-control')
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-control')
+        if 'source_batch' in self.fields:
+            self.fields['source_batch'].label_from_instance = lambda obj: (
+                f"{obj.batch_number} — exp {obj.expiration_date}"
+                f" ({obj.available_quantity()} {obj.product.unit} available)"
+            )
+
+    def _clean_batch(self, cleaned_data):
+        """Shared source_batch checks: belongs to the product, has enough stock."""
+        product = cleaned_data.get('product')
+        source_batch = cleaned_data.get('source_batch')
+        quantity = cleaned_data.get('quantity')
+
+        if not source_batch:
+            self.add_error('source_batch', 'A batch must be selected.')
+        if quantity is not None and quantity == 0:
+            self.add_error('quantity', 'Quantity must be greater than zero.')
+        if source_batch and product and source_batch.product != product:
+            self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
+        if source_batch and quantity:
+            avail = source_batch.available_quantity()
+            if quantity > avail:
+                self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
 
 
 class ProductionInForm(_MovementFormMixin, forms.ModelForm):
@@ -35,11 +67,6 @@ class ProductionInForm(_MovementFormMixin, forms.ModelForm):
             'expiration_date': forms.DateInput(attrs={'type': 'date'}),
             'note': forms.Textarea(attrs={'rows': 3}),
         }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        self._style()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -62,12 +89,7 @@ class ProductionInForm(_MovementFormMixin, forms.ModelForm):
 
 
 class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
-    source_batch = forms.ModelChoiceField(
-        queryset=InventoryMovement.objects.filter(movement_type='production_in').order_by('product__name', 'expiration_date'),
-        required=True,
-        empty_label='Select a batch',
-        label='Batch',
-    )
+    source_batch = _batch_field()
     destination_branch = forms.ModelChoiceField(
         queryset=Branch.objects.all(),
         empty_label='Select a branch',
@@ -82,52 +104,27 @@ class DeliveryOutForm(_MovementFormMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self._style()
         if self.user and not self.user.is_superuser:
             profile = getattr(self.user, 'profile', None)
             if profile and profile.role == 'sales':
                 assigned = profile.assigned_branches.all()
                 if assigned.exists():
                     self.fields['destination_branch'].queryset = assigned
-        self.fields['source_batch'].label_from_instance = lambda obj: (
-            f"{obj.batch_number} — exp {obj.expiration_date}"
-            f" ({obj.available_quantity()} {obj.product.unit} available)"
-        )
 
     def clean(self):
         cleaned_data = super().clean()
-        product = cleaned_data.get('product')
-        source_batch = cleaned_data.get('source_batch')
-        branch = cleaned_data.get('destination_branch')
-        quantity = cleaned_data.get('quantity')
-        ref = cleaned_data.get('reference_no', '').strip()
+        self._clean_batch(cleaned_data)
 
-        if not branch:
+        if not cleaned_data.get('destination_branch'):
             self.add_error('destination_branch', 'A branch is required for delivery.')
-        if not ref:
+        if not cleaned_data.get('reference_no', '').strip():
             self.add_error('reference_no', 'A reference number is required for deliveries.')
-        if not source_batch:
-            self.add_error('source_batch', 'A batch must be selected.')
-        if quantity is not None and quantity == 0:
-            self.add_error('quantity', 'Quantity must be greater than zero.')
-        if source_batch and product and source_batch.product != product:
-            self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
-        if source_batch and quantity:
-            avail = source_batch.available_quantity()
-            if quantity > avail:
-                self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
         return cleaned_data
 
 
 class LossForm(_MovementFormMixin, forms.ModelForm):
-    source_batch = forms.ModelChoiceField(
-        queryset=InventoryMovement.objects.filter(movement_type='production_in').order_by('product__name', 'expiration_date'),
-        required=True,
-        empty_label='Select a batch',
-        label='Batch',
-    )
+    source_batch = _batch_field()
     source_delivery = forms.ModelChoiceField(
         queryset=InventoryMovement.objects.filter(movement_type='delivery_out').order_by('-created_at'),
         required=False,
@@ -143,39 +140,23 @@ class LossForm(_MovementFormMixin, forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self._style()
         self.fields['loss_location'].required = True
         self.fields['source_delivery'].label_from_instance = lambda obj: (
             f"{obj.reference_no or 'No ref'} — {obj.product.name}"
             f" → {obj.destination_branch or '?'} ({obj.quantity} {obj.product.unit}, {obj.created_at.strftime('%b %d, %Y')})"
         )
-        self.fields['source_batch'].label_from_instance = lambda obj: (
-            f"{obj.batch_number} — exp {obj.expiration_date}"
-            f" ({obj.available_quantity()} {obj.product.unit} available)"
-        )
 
     def clean(self):
         cleaned_data = super().clean()
+        self._clean_batch(cleaned_data)
+
         product = cleaned_data.get('product')
-        source_batch = cleaned_data.get('source_batch')
         source_delivery = cleaned_data.get('source_delivery')
         loss_location = cleaned_data.get('loss_location')
-        quantity = cleaned_data.get('quantity')
 
         if not loss_location:
             self.add_error('loss_location', 'Loss location is required.')
-        if not source_batch:
-            self.add_error('source_batch', 'A batch must be selected.')
-        if quantity is not None and quantity == 0:
-            self.add_error('quantity', 'Quantity must be greater than zero.')
-        if source_batch and product and source_batch.product != product:
-            self.add_error('source_batch', 'Selected batch does not belong to the chosen product.')
-        if source_batch and quantity:
-            avail = source_batch.available_quantity()
-            if quantity > avail:
-                self.add_error('quantity', f"Only {avail} {product.unit if product else 'units'} available in this batch.")
         if loss_location == 'transit' and not source_delivery:
             self.add_error('source_delivery', 'A related delivery is required for transit losses.')
         if source_delivery and product and source_delivery.product != product:
@@ -194,11 +175,6 @@ class RetailerSalesForm(forms.ModelForm):
         empty_label='Select a delivery',
         label='Delivery',
     )
-    branch = forms.ModelChoiceField(
-        queryset=Branch.objects.all(),
-        empty_label='Select a branch',
-    )
-
     class Meta:
         model = RetailerSales
         fields = ['delivery_movement', 'product', 'branch', 'sold_quantity',
@@ -209,6 +185,13 @@ class RetailerSalesForm(forms.ModelForm):
         labels = {
             'internal_delivery_qty': 'Quantity We Delivered',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # all three are overwritten from delivery_movement in clean(); the form
+        # only renders them so the JS can show what the delivery filled in
+        for name in ('product', 'branch', 'internal_delivery_qty'):
+            self.fields[name].required = False
 
     def clean(self):
         cleaned_data = super().clean()
@@ -255,8 +238,6 @@ class ReconciliationResolveForm(forms.Form):
     def __init__(self, *args, internal_delivery_qty=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.internal_delivery_qty = internal_delivery_qty
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
 
     def clean(self):
         cleaned_data = super().clean()
@@ -310,11 +291,6 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            field.widget.attrs.setdefault('class', 'form-control')
 
 
 class UserEditForm(forms.ModelForm):

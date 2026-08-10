@@ -160,8 +160,6 @@
                     <td>
                         {% if not r.reconciled %}
                             <span class="badge" style="background:#fef3c7;color:#92400e;">Pending</span>
-                        {% elif r.resolution_status == 'returned' %}
-                            <span class="badge" style="background:#dbeafe;color:#1d4ed8;">Returned</span>
                         {% elif r.resolution_status == 'written_off' %}
                             <span class="badge" style="background:#f1f5f9;color:#475569;">Written Off</span>
                         {% elif r.resolution_status == 'corrected' %}

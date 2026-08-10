@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from django.utils import timezone
 
 
 class Product(models.Model):
@@ -44,7 +43,6 @@ class InventoryMovement(models.Model):
     MOVEMENT_TYPES = [
         ('production_in', 'Production In'),
         ('delivery_out', 'Delivery Out'),
-        ('return_in', 'Return In'),
         ('loss', 'Stock Loss'),
     ]
 
@@ -93,10 +91,7 @@ class InventoryMovement(models.Model):
         deducted = self.deductions.filter(
             movement_type__in=['delivery_out', 'loss']
         ).aggregate(total=Sum('quantity'))['total'] or 0
-        returned = self.deductions.filter(
-            movement_type='return_in'
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-        return self.quantity - deducted + returned
+        return self.quantity - deducted
 
     def __str__(self):
         return f"{self.get_movement_type_display()} - {self.product.name} ({self.quantity})"
@@ -107,7 +102,6 @@ class RetailerSales(models.Model):
 
     RESOLUTION_CHOICES = [
         ('pending',     'Pending'),
-        ('returned',    'Returned to Warehouse'),
         ('written_off', 'Written Off'),
         ('corrected',   'Corrected Entry'),
     ]

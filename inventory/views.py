@@ -19,16 +19,11 @@ from .forms import (
 )
 
 
-_TYPE_ROLES = {
-    'production_in': ('admin', 'warehouse'),
-    'delivery_out':  ('admin', 'sales'),
-    'loss':          ('admin', 'warehouse'),
-}
-
-_MOVEMENT_FORMS = {
-    'production_in': ProductionInForm,
-    'delivery_out':  DeliveryOutForm,
-    'loss':          LossForm,
+# movement_type -> (form class, roles allowed to record it)
+_MOVEMENT_TYPES = {
+    'production_in': (ProductionInForm, ('admin', 'warehouse')),
+    'delivery_out':  (DeliveryOutForm,  ('admin', 'sales')),
+    'loss':          (LossForm,         ('admin', 'warehouse')),
 }
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -172,7 +167,6 @@ def product_detail(request, pk):
     production_batches = movements.filter(movement_type='production_in')
     total_produced  = production_batches.aggregate(total=Sum('quantity'))['total'] or 0
     total_delivered = movements.filter(movement_type='delivery_out').aggregate(total=Sum('quantity'))['total'] or 0
-    total_returned  = movements.filter(movement_type='return_in').aggregate(total=Sum('quantity'))['total'] or 0
     total_lost      = movements.filter(movement_type='loss').aggregate(total=Sum('quantity'))['total'] or 0
 
     can_see_recon = _has_role(request.user, 'admin', 'accountant')
@@ -188,7 +182,6 @@ def product_detail(request, pk):
         'production_batches': production_batches,
         'total_produced': total_produced,
         'total_delivered': total_delivered,
-        'total_returned': total_returned,
         'total_lost': total_lost,
         'can_see_recon': can_see_recon,
         'sales': sales,
@@ -282,17 +275,16 @@ def movement_create(request):
     movement_type = request.POST.get('movement_type') or request.GET.get('type', '')
 
     if not movement_type:
-        allowed = [t for t, roles in _TYPE_ROLES.items() if _has_role(request.user, *roles)]
+        allowed = [t for t, (_, roles) in _MOVEMENT_TYPES.items() if _has_role(request.user, *roles)]
         return render(request, 'inventory/movement_type_select.html', {'allowed_types': allowed, 'title': 'Record Movement'})
 
-    if movement_type not in _MOVEMENT_FORMS:
+    if movement_type not in _MOVEMENT_TYPES:
         messages.error(request, 'Invalid movement type.')
         return redirect('movement_create')
-    if not _has_role(request.user, *_TYPE_ROLES[movement_type]):
+    FormClass, roles = _MOVEMENT_TYPES[movement_type]
+    if not _has_role(request.user, *roles):
         messages.error(request, 'You are not permitted to record this movement type.')
         return redirect('movement_create')
-
-    FormClass = _MOVEMENT_FORMS[movement_type]
 
     if request.method == 'POST':
         form = FormClass(request.POST, user=request.user)
@@ -574,12 +566,10 @@ def reports(request):
     unreturned_unsold = (
         RetailerSales.objects
         .filter(reconciled=True, discrepancy__gt=0)
-        .exclude(resolution_status='returned')
         .values('product__name', 'product__sku', 'product__unit')
         .annotate(total_lost=Sum('discrepancy'))
         .order_by('-total_lost')
     )
-    back_orders = InventoryMovement.objects.filter(movement_type='back_order').select_related('product', 'created_by', 'destination_branch').order_by('-created_at')
     unreconciled = RetailerSales.objects.filter(reconciled=False).count()
     reconciled = RetailerSales.objects.filter(reconciled=True).count()
     
@@ -591,7 +581,6 @@ def reports(request):
         'product_losses': product_losses,
         'deliveries_by_branch': deliveries_by_branch,
         'unreturned_unsold': unreturned_unsold,
-        'back_orders': back_orders,
         'unreconciled': unreconciled,
         'reconciled': reconciled,
     })
@@ -794,7 +783,6 @@ def branch_detail(request, pk):
         .order_by('-created_at')
     )
     total_delivered = movements.filter(movement_type='delivery_out').aggregate(total=Sum('quantity'))['total'] or 0
-    total_back_orders = movements.filter(movement_type='back_order').aggregate(total=Sum('quantity'))['total'] or 0
 
     can_see_reconciliation = _has_role(request.user, 'admin', 'accountant')
     sales = None
@@ -809,7 +797,6 @@ def branch_detail(request, pk):
         'branch': branch,
         'movements': movements,
         'total_delivered': total_delivered,
-        'total_back_orders': total_back_orders,
         'can_see_reconciliation': can_see_reconciliation,
         'sales': sales,
         'total_sold': total_sold,

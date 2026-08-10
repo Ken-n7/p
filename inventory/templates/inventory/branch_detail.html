@@ -93,8 +93,6 @@
                     <td>
                         {% if m.movement_type == 'delivery_out' %}
                             <span class="badge" style="background:#dbeafe;color:#1d4ed8;">{{ m.get_movement_type_display }}</span>
-                        {% elif m.movement_type == 'return_in' %}
-                            <span class="badge" style="background:#e0f2fe;color:#0369a1;">{{ m.get_movement_type_display }}</span>
                         {% else %}
                             <span class="badge" style="background:#f1f5f9;color:#64748b;">{{ m.get_movement_type_display }}</span>
                         {% endif %}
