@@ -1,4 +1,4 @@
-# Supply Chain Match — CLAUDE.md
+# Supply Chain Match — Architecture
 
 ## Project Overview
 
